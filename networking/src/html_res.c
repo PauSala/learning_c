@@ -18,7 +18,7 @@ ResultChar read_html_file(const char *file_path)
     size_t required_length = strlen(TEMPLATE_PATH) + strlen(file_path) + 1;
     if (required_length >= MAX_PATH_LENGTH)
     {
-        return result_char(Err, NULL, "Error: Combined path is too long!.");
+        return result_char(Err, "Error: Combined path is too long!.");
     }
 
     snprintf(full_path, sizeof(full_path), "%s/%s", TEMPLATE_PATH, file_path);
@@ -28,7 +28,7 @@ ResultChar read_html_file(const char *file_path)
     {
         // perror("Could not open file");
         char *error_message = strerror(errno);
-        return result_char(Err, NULL, error_message);
+        return result_char(Err, error_message);
     }
 
     // Get the file size
@@ -40,7 +40,7 @@ ResultChar read_html_file(const char *file_path)
     char *buffer = (char *)malloc(file_size + 1);
     if (!buffer)
     {
-        return result_char(Err, NULL, strerror(errno));
+        return result_char(Err, strerror(errno));
     }
 
     // Read the file into the buffer

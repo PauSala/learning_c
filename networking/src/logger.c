@@ -26,7 +26,6 @@ void logger(const char *format, LogLevel level, ...)
         break;
     }
 
-    // Prepare the formatted message
     va_list args;
     va_start(args, level);
 
@@ -47,11 +46,8 @@ void logger(const char *format, LogLevel level, ...)
 
     // Format the message
     vsnprintf(message, message_size, format, args);
-
-    // Prepend log level and print the full message
     printf("%s%s\n", level_str, message);
 
-    // Clean up
     va_end(args);
     free(message);
 }

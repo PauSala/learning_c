@@ -52,6 +52,11 @@ void logger(const char *format, LogLevel level, ...)
     free(message);
 }
 
+void critical_logger(const char *message)
+{
+    fprintf(stderr, BG_BRIGHT_RED BLACK "[CRITICAL ERROR] %s" RESET "\n", message);
+}
+
 char *interpolate(const char *format, ...)
 {
     va_list args;

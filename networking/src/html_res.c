@@ -6,6 +6,7 @@
 #include "../include/html_res.h"
 #include "../include/logger.h"
 #include "../include/response_t.h"
+#include "../include/errors.h"
 
 #define OK_200 "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\n\r\n%s"
 #define TEMPLATE_PATH "templates"
@@ -22,8 +23,8 @@ ResultChar read_html_file(const char *file_path)
     if (required_length >= MAX_PATH_LENGTH)
     {
         char *err = PATH_TOO_LONG;
-        char *full = interpolate("%s %s: %s", READ_HTML_IDENTIFIER, err, file_path);
-        return result_char(Err, full);
+        logger("%s %s: %d", DEBUG, READ_HTML_IDENTIFIER, err, required_length);
+        return result_char(Err, PATH_TO_LONG_E);
     }
 
     snprintf(full_path, sizeof(full_path), "%s/%s", TEMPLATE_PATH, file_path);
@@ -32,9 +33,9 @@ ResultChar read_html_file(const char *file_path)
     if (!file)
     {
         char *err = strdup(strerror(errno));
-        char *full = interpolate("%s %s: %s", READ_HTML_IDENTIFIER, err, full_path);
+        logger("%s %s: %s", DEBUG, READ_HTML_IDENTIFIER, err, full_path);
         free(err);
-        return result_char(Err, full);
+        return result_char(Err, IO_E);
     }
 
     // Get the file size
@@ -46,8 +47,8 @@ ResultChar read_html_file(const char *file_path)
     char *buffer = (char *)malloc(file_size + 1);
     if (!buffer)
     {
-        logger("%s %s", ERROR, READ_HTML_IDENTIFIER, MERROR);
-        exit(1);
+        critical_logger("Failed to allocate");
+        return result_char(Err, MEMORY_E);
     }
 
     // Read the file into the buffer
@@ -72,8 +73,8 @@ ResultChar html_response(const char *template_path)
     char *response = (char *)malloc(strlen(OK_200) + content_length + 1);
     if (!response)
     {
-        logger("%s %s", ERROR, READ_HTML_IDENTIFIER, MERROR);
-        exit(1);
+        critical_logger("Failed to allocate");
+        return result_char(Err, MEMORY_E);
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);

@@ -1,6 +1,8 @@
 #ifndef RESPONSE_T
 #define RESPONSE_T
 
+#include "errors.h"
+
 // Enum to specify the type of response
 typedef enum
 {
@@ -16,7 +18,7 @@ typedef enum
         union                  \
         {                      \
             type res;          \
-            char *err;         \
+            ServerError err;   \
         } val;                 \
     } Result##name;
 
@@ -37,36 +39,28 @@ DEF_RESULT(int, Int)
         }                                              \
         else if (ty == Err)                            \
         {                                              \
-            result.val.err = va_arg(args, char *);     \
+            result.val.err = va_arg(args, int);        \
         }                                              \
         va_end(args);                                  \
         return result;                                 \
     }
 
-#define DEF_FREE_RESULT(free_func, input_type, name)   \
-    void free_result_##name(input_type *result)        \
-    {                                                  \
-        const char *env_var = "DEBUG_C_SERVER";        \
-        char *value = getenv(env_var);                 \
-        if (!result)                                   \
-            return;                                    \
-                                                       \
-        if (result->ty == Ok)                          \
-        {                                              \
-            if (value != NULL)                         \
-            {                                          \
-                logger("Freeing result", DEBUG);       \
-            }                                          \
-            free_func(result->val.res);                \
-        }                                              \
-        else if (result->ty == Err && result->val.err) \
-        {                                              \
-            if (value != NULL)                         \
-            {                                          \
-                logger("Freeing error", DEBUG);        \
-            }                                          \
-            free(result->val.err);                     \
-        }                                              \
+#define DEF_FREE_RESULT(free_func, input_type, name) \
+    void free_result_##name(input_type *result)      \
+    {                                                \
+        const char *env_var = "DEBUG_C_SERVER";      \
+        char *value = getenv(env_var);               \
+        if (!result)                                 \
+            return;                                  \
+                                                     \
+        if (result->ty == Ok)                        \
+        {                                            \
+            if (value != NULL)                       \
+            {                                        \
+                logger("Freeing result", DEBUG);     \
+            }                                        \
+            free_func(result->val.res);              \
+        }                                            \
     }
 
 void free_result_char(ResultChar *result);

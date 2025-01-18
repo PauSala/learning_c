@@ -15,6 +15,7 @@
 #include "../include/html_res.h"
 #include "../include/response_t.h"
 #include "../include/logger.h"
+#include "../include/errors.h"
 
 #define DEFAULT_ERROR_MESSAGE "THIS IS THE DEFAULT ERROR MESSAGE"
 #define PORT "3000"
@@ -154,7 +155,7 @@ int main(void)
         {
             char *err = strdup(strerror(errno));
             logger("Poll: %s", ERROR, err);
-            free(&err);
+            free(err);
             exit(1);
         }
 
@@ -227,7 +228,7 @@ int main(void)
                         }
                         else
                         {
-                            logger(response.val.err, ERROR);
+                            logger("%s", ERROR, e_to_string(&response.val.err));
                         }
 
                         free_result_char(&response);

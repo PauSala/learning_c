@@ -228,7 +228,7 @@ int main(void)
                         }
                         else
                         {
-                            logger("%s", ERROR, e_to_string(&response.val.err));
+                            logger("%s %s", ERROR, e_to_string(&response.val.err), "When trying to get html_response.");
                         }
 
                         free_result_char(&response);

@@ -12,6 +12,7 @@
 #define MAX_PATH_LENGTH 1024
 #define PATH_TOO_LONG "Combined path is too long"
 #define READ_HTML_IDENTIFIER "read_html_file -> "
+#define MERROR "FAILED TO ALLOCATE"
 
 ResultChar read_html_file(const char *file_path)
 {
@@ -45,10 +46,8 @@ ResultChar read_html_file(const char *file_path)
     char *buffer = (char *)malloc(file_size + 1);
     if (!buffer)
     {
-        char *err = strdup(strerror(errno));
-        char *full = interpolate("%s %s", READ_HTML_IDENTIFIER, err);
-        free(err);
-        return result_char(Err, full);
+        logger("%s %s", ERROR, READ_HTML_IDENTIFIER, MERROR);
+        exit(1);
     }
 
     // Read the file into the buffer
@@ -73,11 +72,8 @@ ResultChar html_response(const char *template_path)
     char *response = (char *)malloc(strlen(OK_200) + content_length + 1);
     if (!response)
     {
-        char *err = strdup(strerror(errno));
-        char *full = interpolate("%s %s", READ_HTML_IDENTIFIER, err);
-        free(err);
-        free_result_char(&html_response);
-        return result_char(Err, full);
+        logger("%s %s", ERROR, READ_HTML_IDENTIFIER, MERROR);
+        exit(1);
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);

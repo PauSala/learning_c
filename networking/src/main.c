@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <poll.h>
+#include <errno.h>
 
 #include "../include/html_res.h"
 #include "../include/response_t.h"
@@ -151,7 +152,9 @@ int main(void)
 
         if (poll_count == -1)
         {
-            perror("poll");
+            char *err = strdup(strerror(errno));
+            logger("Poll: %s", ERROR, err);
+            free(&err);
             exit(1);
         }
 

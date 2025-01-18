@@ -1,5 +1,5 @@
-#ifndef RESPONSE_T
-#define RESPONSE_T
+#ifndef RESULT_T
+#define RESULT_T
 
 // Enum to specify the type of response
 typedef enum
@@ -46,25 +46,17 @@ DEF_RESULT(int, Int)
 #define DEF_FREE_RESULT(free_func, input_type, name)   \
     void free_result_##name(input_type *result)        \
     {                                                  \
-        const char *env_var = "DEBUG_C_SERVER";        \
-        char *value = getenv(env_var);                 \
         if (!result)                                   \
             return;                                    \
                                                        \
         if (result->ty == Ok)                          \
         {                                              \
-            if (value != NULL)                         \
-            {                                          \
-                logger("Freeing result", DEBUG);       \
-            }                                          \
+            logger("Freeing res", DEBUG);              \
             free_func(result->val.res);                \
         }                                              \
         else if (result->ty == Err && result->val.err) \
         {                                              \
-            if (value != NULL)                         \
-            {                                          \
-                logger("Freeing error", DEBUG);        \
-            }                                          \
+            logger("Freeing err", DEBUG);              \
             free(result->val.err);                     \
         }                                              \
     }

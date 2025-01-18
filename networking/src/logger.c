@@ -4,6 +4,28 @@
 #include <string.h>
 #include "../include/logger.h"
 
+char *interpolate(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    size_t message_size = vsnprintf(NULL, 0, format, args) + 1;
+    char *message = (char *)malloc(message_size);
+    if (!message)
+    {
+        perror("malloc failed");
+        exit(1);
+    }
+
+    va_end(args);
+    va_start(args, format);
+    // Format the message
+    vsnprintf(message, message_size, format, args);
+
+    va_end(args);
+    return message;
+}
+
 // Logging function that formats and logs messages
 void logger(const char *format, LogLevel level, ...)
 {

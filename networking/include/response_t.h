@@ -23,24 +23,24 @@ typedef enum
 DEF_RESULT(char *, Char)
 DEF_RESULT(int, Int)
 
-#define DEF_BUILD_RESULT(type, input_type, name)           \
-    type result_##name(EResult ty, ...)                    \
-    {                                                      \
-        type result;                                       \
-        result.ty = ty;                                    \
-        va_list args;                                      \
-        va_start(args, ty);                                \
-                                                           \
-        if (ty == Ok)                                      \
-        {                                                  \
-            result.val.res = va_arg(args, input_type);     \
-        }                                                  \
-        else if (ty == Err)                                \
-        {                                                  \
-            result.val.err = strdup(va_arg(args, char *)); \
-        }                                                  \
-        va_end(args);                                      \
-        return result;                                     \
+#define DEF_BUILD_RESULT(type, input_type, name)       \
+    type result_##name(EResult ty, ...)                \
+    {                                                  \
+        type result;                                   \
+        result.ty = ty;                                \
+        va_list args;                                  \
+        va_start(args, ty);                            \
+                                                       \
+        if (ty == Ok)                                  \
+        {                                              \
+            result.val.res = va_arg(args, input_type); \
+        }                                              \
+        else if (ty == Err)                            \
+        {                                              \
+            result.val.err = va_arg(args, char *);     \
+        }                                              \
+        va_end(args);                                  \
+        return result;                                 \
     }
 
 #define DEF_FREE_RESULT(free_func, input_type, name)   \

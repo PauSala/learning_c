@@ -17,6 +17,8 @@ typedef enum
     INFO
 } LogLevel;
 
+char *interpolate(const char *format, ...);
+char *cnct_str(char *str1, char *str2);
 void logger(const char *format, LogLevel level, ...);
 
 #endif

@@ -10,6 +10,8 @@
 #define OK_200 "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\n\r\n%s"
 #define TEMPLATE_PATH "templates"
 #define MAX_PATH_LENGTH 1024
+#define PATH_TOO_LONG "Combined path is too long"
+#define READ_HTML_IDENTIFIER "read_html_file -> "
 
 ResultChar read_html_file(const char *file_path)
 {
@@ -18,7 +20,9 @@ ResultChar read_html_file(const char *file_path)
     size_t required_length = strlen(TEMPLATE_PATH) + strlen(file_path) + 1;
     if (required_length >= MAX_PATH_LENGTH)
     {
-        return result_char(Err, "Error: Combined path is too long!.");
+        char *err = PATH_TOO_LONG;
+        char *full = interpolate("%s %s: %s", READ_HTML_IDENTIFIER, err, file_path);
+        return result_char(Err, full);
     }
 
     snprintf(full_path, sizeof(full_path), "%s/%s", TEMPLATE_PATH, file_path);
@@ -26,9 +30,10 @@ ResultChar read_html_file(const char *file_path)
     FILE *file = fopen(full_path, "r");
     if (!file)
     {
-        // perror("Could not open file");
-        char *error_message = strerror(errno);
-        return result_char(Err, error_message);
+        char *err = strdup(strerror(errno));
+        char *full = interpolate("%s %s: %s", READ_HTML_IDENTIFIER, err, full_path);
+        free(err);
+        return result_char(Err, full);
     }
 
     // Get the file size
@@ -40,7 +45,10 @@ ResultChar read_html_file(const char *file_path)
     char *buffer = (char *)malloc(file_size + 1);
     if (!buffer)
     {
-        return result_char(Err, strerror(errno));
+        char *err = strdup(strerror(errno));
+        char *full = interpolate("%s %s", READ_HTML_IDENTIFIER, err);
+        free(err);
+        return result_char(Err, full);
     }
 
     // Read the file into the buffer
@@ -65,8 +73,10 @@ ResultChar html_response(const char *template_path)
     char *response = (char *)malloc(strlen(OK_200) + content_length + 1);
     if (!response)
     {
-        char *error_message = strerror(errno);
-        return result_char(Err, error_message);
+        char *err = strdup(strerror(errno));
+        char *full = interpolate("%s %s", READ_HTML_IDENTIFIER, err);
+        free(err);
+        return result_char(Err, full);
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);

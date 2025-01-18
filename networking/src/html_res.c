@@ -11,7 +11,7 @@
 #define TEMPLATE_PATH "templates"
 #define MAX_PATH_LENGTH 1024
 
-Resultchar read_html_file(const char *file_path)
+ResultChar read_html_file(const char *file_path)
 {
 
     static char full_path[MAX_PATH_LENGTH];
@@ -27,7 +27,7 @@ Resultchar read_html_file(const char *file_path)
     if (!file)
     {
         // perror("Could not open file");
-        char *error_message = strdup(strerror(errno));
+        char *error_message = strerror(errno);
         return result_char(Err, NULL, error_message);
     }
 
@@ -40,7 +40,7 @@ Resultchar read_html_file(const char *file_path)
     char *buffer = (char *)malloc(file_size + 1);
     if (!buffer)
     {
-        return result_char(Err, NULL, strdup(strerror(errno)));
+        return result_char(Err, NULL, strerror(errno));
     }
 
     // Read the file into the buffer
@@ -51,9 +51,9 @@ Resultchar read_html_file(const char *file_path)
     return result_char(Ok, buffer);
 }
 
-Resultchar html_response(const char *template_path)
+ResultChar html_response(const char *template_path)
 {
-    Resultchar html_response = read_html_file(template_path);
+    ResultChar html_response = read_html_file(template_path);
     if (html_response.ty == Err)
     {
         return html_response;
@@ -65,7 +65,7 @@ Resultchar html_response(const char *template_path)
     char *response = (char *)malloc(strlen(OK_200) + content_length + 1);
     if (!response)
     {
-        char *error_message = strdup(strerror(errno));
+        char *error_message = strerror(errno);
         return result_char(Err, error_message);
     }
 

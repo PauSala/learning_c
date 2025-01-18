@@ -15,6 +15,7 @@
 #include "../include/response_t.h"
 #include "../include/logger.h"
 
+#define DEFAULT_ERROR_MESSAGE "THIS IS THE DEFAULT ERROR MESSAGE"
 #define PORT "3000"
 #define HOST "0.0.0.0"
 
@@ -116,10 +117,6 @@ void del_from_pfds(struct pollfd pfds[], int i, int *fd_count)
 int main(void)
 {
 
-    Resultint foo = result_int(Err, strdup("This is an error"));
-    logger("%s", WARN, foo.val.err);
-    free_result_int(&foo);
-
     int listener; // Listening socket descriptor
 
     int newfd;                          // Newly accept()ed socket descriptor
@@ -220,7 +217,7 @@ int main(void)
                                buf);
 
                         // Default hello world response
-                        Resultchar response = html_response("hello.html");
+                        ResultChar response = html_response("hello.html");
                         if (response.ty == Ok)
                         {
                             send(sender_fd, response.val.res, strlen(response.val.res), 0);

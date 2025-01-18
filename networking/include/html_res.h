@@ -3,6 +3,6 @@
 
 #include "../include/response_t.h"
 
-Resultchar html_response(const char *template_path);
+ResultChar html_response(const char *template_path);
 
 #endif

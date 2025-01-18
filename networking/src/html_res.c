@@ -76,9 +76,11 @@ ResultChar html_response(const char *template_path)
         char *err = strdup(strerror(errno));
         char *full = interpolate("%s %s", READ_HTML_IDENTIFIER, err);
         free(err);
+        free_result_char(&html_response);
         return result_char(Err, full);
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);
+    free_result_char(&html_response);
     return result_char(Ok, response);
 }

@@ -177,6 +177,7 @@ int main(void)
             {
                 // Client data ready to read
                 char buf[BUFFER_SIZE];
+                // todo handle buffer overflow
                 ssize_t nbytes = recv(fd, buf, sizeof(buf) - 1, 0);
 
                 if (nbytes <= 0)
@@ -219,6 +220,7 @@ int main(void)
         }
     }
 
+    logger("Exit", INFO);
     close(listener);
     return 0;
 }

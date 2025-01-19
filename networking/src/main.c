@@ -158,7 +158,9 @@ int main(void)
                 newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
                 if (newfd == -1)
                 {
-                    perror("accept");
+                    char *err = strdup(strerror(errno));
+                    logger("accept: %s", ERROR, err);
+                    free(err);
                 }
                 else
                 {

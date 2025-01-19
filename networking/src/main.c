@@ -101,7 +101,7 @@ void add_to_pfds(struct pollfd *pfds[], int newfd, int *fd_count, int *fd_size)
     }
 
     (*pfds)[*fd_count].fd = newfd;
-    (*pfds)[*fd_count].events = POLLIN; // Check ready-to-read
+    (*pfds)[*fd_count].events = POLLIN | POLLHUP; // Check ready-to-read
 
     (*fd_count)++;
 }
@@ -162,10 +162,10 @@ int main(void)
         // Run through the existing connections looking for data to read
         for (int i = 0; i < fd_count; i++)
         {
-
             // Check if someone's ready to read
             if (pfds[i].revents & (POLLIN | POLLHUP))
             { // We got one!!
+
                 if (pfds[i].fd == listener)
                 {
                     // If listener is ready to read, handle new connection
@@ -201,11 +201,18 @@ int main(void)
                         if (nbytes == 0)
                         {
                             // Connection closed
-                            logger("Socket hung up", WARN);
+                            logger("Socket hung up, connection closed by client: %s", INFO,
+                                   inet_ntop(remoteaddr.ss_family,
+                                             get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
                         }
                         else
                         {
-                            perror("recv");
+                            char *err = strdup(strerror(errno));
+                            // Connection closed
+                            logger("%s:  %s", INFO, err,
+                                   inet_ntop(remoteaddr.ss_family,
+                                             get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+                            free(err);
                         }
 
                         close(pfds[i].fd);
@@ -215,10 +222,10 @@ int main(void)
                     {
                         // Null-terminate the received data to safely print it
                         buf[nbytes] = '\0';
-                        logger("Received data from %s\n%s", INFO,
+                        logger("Received data from %s on socket: %d\n%s", INFO,
                                inet_ntop(
                                    remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
-                               buf);
+                               pfds[i].fd, buf);
 
                         // Default hello world response
                         ResultChar response = html_response("hello.html");
@@ -232,7 +239,6 @@ int main(void)
                         }
 
                         free_result_char(&response);
-                        close(sender_fd);
                     }
                 }
             }

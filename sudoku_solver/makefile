@@ -1,4 +1,4 @@
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -pedantic -std=c99
 SRCS = src/main.c src/read_input.c src/sudoku.c src/ds.c
 OBJS = $(SRCS:.c=.o)

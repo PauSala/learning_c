@@ -1,23 +1,25 @@
-// poll server example from https://beej.vals/guide/bgnet/html/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
-#include <sys/types.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <poll.h>
-#include <errno.h>
+#include <sys/types.h>
+#include <sys/event.h>
+#include <sys/time.h>
 
 #include "../include/html_res.h"
 #include "../include/response_t.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
 
-#define DEFAULT_ERROR_MESSAGE "THIS IS THE DEFAULT ERROR MESSAGE"
+#define MAX_EVENTS 64
+#define BUFFER_SIZE 1024
+
 #define PORT "3000"
 #define HOST "0.0.0.0"
 
@@ -89,50 +91,34 @@ int get_listener_socket(void)
     return listener;
 }
 
-// Add a new file descriptor to the set
-void add_to_pfds(struct pollfd *pfds[], int newfd, int *fd_count, int *fd_size)
+void add_event(int kq, int fd, int filter, int flags)
 {
-    // If we don't have room, add more space in the pfds array
-    if (*fd_count == *fd_size)
+    struct kevent ev;
+    EV_SET(&ev, fd, filter, flags, 0, 0, NULL);
+    if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1)
     {
-        *fd_size *= 2; // Double it
-
-        *pfds = realloc(*pfds, sizeof(**pfds) * (*fd_size));
+        perror("kevent add");
+        exit(1);
     }
-
-    (*pfds)[*fd_count].fd = newfd;
-    (*pfds)[*fd_count].events = POLLIN | POLLHUP; // Check ready-to-read
-
-    (*fd_count)++;
 }
 
-// Remove an index from the set
-void del_from_pfds(struct pollfd pfds[], int i, int *fd_count)
-{
-    // Copy the one from the end over this one
-    pfds[i] = pfds[*fd_count - 1];
-
-    (*fd_count)--;
-}
-
-// Main
 int main(void)
 {
-
     int listener; // Listening socket descriptor
-
-    int newfd;                          // Newly accept()ed socket descriptor
-    struct sockaddr_storage remoteaddr; // Client address
+    int newfd;    // Newly accepted socket
+    struct sockaddr_storage remoteaddr;
     socklen_t addrlen;
-
     char remoteIP[INET6_ADDRSTRLEN];
 
-    // Start off with room for 5 connections
-    int fd_count = 0;
-    int fd_size = 5;
-    struct pollfd *pfds = malloc(sizeof *pfds * fd_size);
+    // Create kqueue
+    int kq = kqueue();
+    if (kq == -1)
+    {
+        perror("kqueue");
+        exit(1);
+    }
 
-    // Set up and get a listening socket
+    // Get a listening socket
     listener = get_listener_socket();
     if (listener == -1)
     {
@@ -140,110 +126,93 @@ int main(void)
         exit(1);
     }
 
-    // Add the listener to set
-    pfds[0].fd = listener;
-    pfds[0].events = POLLIN; // Report ready to read on incoming connection
+    // Make the listener socket non-blocking
+    fcntl(listener, F_SETFL, O_NONBLOCK);
 
-    fd_count = 1; // For the listener
+    // Add listener socket to kqueue
+    logger("Adding listener", INFO);
+    add_event(kq, listener, EVFILT_READ, EV_ADD | EV_ENABLE);
 
-    // Main loop
+    struct kevent events[MAX_EVENTS];
+
+    // Main event loop
     for (;;)
     {
-        int poll_count = poll(pfds, fd_count, -1);
-
-        if (poll_count == -1)
+        int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
+        if (nev == -1)
         {
-            char *err = strdup(strerror(errno));
-            logger("Poll: %s", ERROR, err);
-            free(err);
+            perror("kevent");
             exit(1);
         }
 
-        // Run through the existing connections looking for data to read
-        for (int i = 0; i < fd_count; i++)
+        for (int i = 0; i < nev; i++)
         {
-            // Check if someone's ready to read
-            if (pfds[i].revents & (POLLIN | POLLHUP))
-            { // We got one!!
+            int fd = (int)events[i].ident;
 
-                if (pfds[i].fd == listener)
+            if (fd == listener)
+            {
+                // Accept new connection
+                addrlen = sizeof remoteaddr;
+                newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
+                if (newfd == -1)
                 {
-                    // If listener is ready to read, handle new connection
-                    addrlen = sizeof remoteaddr;
-                    newfd = accept(listener,
-                                   (struct sockaddr *)&remoteaddr,
-                                   &addrlen);
-
-                    if (newfd == -1)
-                    {
-                        perror("accept");
-                    }
-                    else
-                    {
-
-                        add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
-                        logger("New connection from %s on socket %d", INFO,
-                               inet_ntop(remoteaddr.ss_family,
-                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
-                               newfd);
-                    }
+                    perror("accept");
                 }
                 else
                 {
-                    // If not the listener, we're just a regular client
-                    char buf[1024]; // Buffer to hold client data
-                    ssize_t nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-                    int sender_fd = pfds[i].fd;
+                    // Make new socket non-blocking
+                    fcntl(newfd, F_SETFL, O_NONBLOCK);
+                    logger("New connection from %s on socket %d", INFO,
+                           inet_ntop(remoteaddr.ss_family,
+                                     get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
+                           newfd);
+                    add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
+                }
+            }
+            else if (events[i].filter == EVFILT_READ)
+            {
+                // Client data ready to read
+                char buf[BUFFER_SIZE];
+                ssize_t nbytes = recv(fd, buf, sizeof(buf) - 1, 0);
 
-                    if (nbytes <= 0)
+                if (nbytes <= 0)
+                {
+                    if (nbytes == 0)
                     {
-                        // Got error or connection closed by client
-                        if (nbytes == 0)
-                        {
-                            // Connection closed
-                            logger("Socket hung up, connection closed by client: %s", INFO,
-                                   inet_ntop(remoteaddr.ss_family,
-                                             get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
-                        }
-                        else
-                        {
-                            char *err = strdup(strerror(errno));
-                            // Connection closed
-                            logger("%s:  %s", INFO, err,
-                                   inet_ntop(remoteaddr.ss_family,
-                                             get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
-                            free(err);
-                        }
-
-                        close(pfds[i].fd);
-                        del_from_pfds(pfds, i, &fd_count);
+                        logger("Connection closed: %s", INFO,
+                               inet_ntop(remoteaddr.ss_family,
+                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
                     }
                     else
                     {
-                        // Null-terminate the received data to safely print it
-                        buf[nbytes] = '\0';
-                        logger("Received data from %s on socket: %d\n%s", INFO,
-                               inet_ntop(
-                                   remoteaddr.ss_family, get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
-                               pfds[i].fd, buf);
-
-                        // Default hello world response
-                        ResultChar response = html_response("hello.html");
-                        if (response.ty == Ok)
-                        {
-                            send(sender_fd, response.val.res, strlen(response.val.res), 0);
-                        }
-                        else
-                        {
-                            logger("%s %s", ERROR, e_to_string(&response.val.err), "When trying to get html_response.");
-                        }
-
-                        free_result_char(&response);
+                        perror("recv");
                     }
+
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    close(fd);
+                }
+                else
+                {
+                    buf[nbytes] = '\0';
+                    logger("Received data from socket %d: %s", INFO, fd, buf);
+
+                    // Send a response
+                    ResultChar response = html_response("hello.html");
+                    if (response.ty == Ok)
+                    {
+                        send(fd, response.val.res, strlen(response.val.res), 0);
+                    }
+                    else
+                    {
+                        logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
+                    }
+
+                    free_result_char(&response);
                 }
             }
         }
     }
 
+    close(listener);
     return 0;
 }

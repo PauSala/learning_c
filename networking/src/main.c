@@ -141,7 +141,9 @@ int main(void)
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
         if (nev == -1)
         {
-            perror("kevent");
+            char *err = strdup(strerror(errno));
+            logger("kevent: %s", ERROR, err);
+            free(err);
             exit(1);
         }
 
@@ -185,7 +187,9 @@ int main(void)
                     }
                     else
                     {
-                        perror("recv");
+                        char *err = strdup(strerror(errno));
+                        logger("recv: %s", ERROR, err);
+                        free(err);
                     }
 
                     add_event(kq, fd, EVFILT_READ, EV_DELETE);

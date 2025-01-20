@@ -15,8 +15,17 @@
 #define READ_HTML_IDENTIFIER "read_html_file -> "
 #define MERROR "FAILED TO ALLOCATE"
 
+static char *cached_html = NULL;
+static size_t cached_html_size = 0;
+
 ResultChar read_html_file(const char *file_path)
 {
+
+    if (cached_html != NULL)
+    {
+        logger("Cached html", INFO);
+        return result_char(Ok, cached_html);
+    }
 
     static char full_path[MAX_PATH_LENGTH];
     size_t required_length = strlen(TEMPLATE_PATH) + strlen(file_path) + 1;
@@ -44,19 +53,20 @@ ResultChar read_html_file(const char *file_path)
     fseek(file, 0, SEEK_SET);
 
     // Allocate buffer for the file content
-    char *buffer = (char *)malloc(file_size + 1);
-    if (!buffer)
+    cached_html = (char *)malloc(file_size + 1);
+    if (!cached_html)
     {
         critical_logger("Failed to allocate");
         return result_char(Err, MEMORY_E);
     }
 
     // Read the file into the buffer
-    fread(buffer, 1, file_size, file);
-    buffer[file_size] = '\0';
+    fread(cached_html, 1, file_size, file);
+    cached_html[file_size] = '\0';
 
     fclose(file);
-    return result_char(Ok, buffer);
+    cached_html_size = file_size;
+    return result_char(Ok, cached_html);
 }
 
 ResultChar html_response(const char *template_path)
@@ -78,6 +88,6 @@ ResultChar html_response(const char *template_path)
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);
-    free_result_char(&html_response);
+    // free_result_char(&html_response);
     return result_char(Ok, response);
 }

@@ -196,7 +196,6 @@ int main(void)
                     }
 
                     add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                    close(fd);
                 }
                 else
                 {

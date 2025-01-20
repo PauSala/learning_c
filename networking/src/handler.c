@@ -71,7 +71,7 @@ void handle_client(int fd, const char *client_ip)
         return;
     }
 
-    logger("Received data from %s: \n%s", INFO, client_ip, buf);
+    logger("Received data from %s: \n%s\n", INFO, client_ip, buf);
 
     ResultChar response = html_response("hello.html");
     if (response.ty == Ok)

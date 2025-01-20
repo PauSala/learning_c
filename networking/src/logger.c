@@ -4,6 +4,8 @@
 #include <string.h>
 #include "../include/logger.h"
 
+#define BUFFER_SIZE 1024
+
 // Logging function that formats and logs messages
 void logger(const char *format, LogLevel level, ...)
 {
@@ -26,30 +28,19 @@ void logger(const char *format, LogLevel level, ...)
         break;
     }
 
+    char message[BUFFER_SIZE];
     va_list args;
     va_start(args, level);
 
-    // Calculate the buffer size needed for the formatted message
-    size_t message_size = strlen(level_str) + vsnprintf(NULL, 0, format, args) + 1;
+    int written = vsnprintf(message, sizeof(message), format, args);
+    va_end(args);
 
-    // Allocate memory for the full message
-    char *message = (char *)malloc(message_size);
-    if (!message)
+    if (written < 0 || (size_t)written >= sizeof(message))
     {
-        perror("malloc failed");
-        exit(1);
+        fprintf(stderr, YELLOW "[WARN] Log message truncated\n");
     }
 
-    // Re-initialize va_list to use it again in vsnprintf
-    va_end(args);
-    va_start(args, level);
-
-    // Format the message
-    vsnprintf(message, message_size, format, args);
     printf("%s%s\n", level_str, message);
-
-    va_end(args);
-    free(message);
 }
 
 void critical_logger(const char *message)

@@ -17,14 +17,14 @@ void logger(const char *format, LogLevel level, ...)
         level_str = RED "[ERROR] " RESET;
         break;
     case WARN:
-        level_str = YELLOW "[WARN] " RESET;
+        level_str = YELLOW "[WARN]  " RESET;
         break;
     case DEBUG:
         level_str = MAGENTA "[DEBUG] " RESET;
         break;
     case INFO:
     default:
-        level_str = CYAN "[INFO] " RESET;
+        level_str = CYAN "[INFO]  " RESET;
         break;
     }
 
@@ -37,7 +37,7 @@ void logger(const char *format, LogLevel level, ...)
 
     if (written < 0 || (size_t)written >= sizeof(message))
     {
-        fprintf(stderr, YELLOW "[WARN] Log message truncated\n");
+        fprintf(stderr, YELLOW "[WARN]  Log message truncated\n");
     }
 
     printf("%s%s\n", level_str, message);

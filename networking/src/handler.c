@@ -12,6 +12,7 @@
 #define INITIAL_BUFFER_SIZE 1024
 #define MAX_REQUEST_SIZE 65536
 
+// TODO: this is not working at all
 void handle_client(int fd, const char *client_ip)
 {
     size_t buf_size = INITIAL_BUFFER_SIZE;
@@ -19,7 +20,6 @@ void handle_client(int fd, const char *client_ip)
     if (!buf)
     {
         critical_logger("failed to allocate");
-        close(fd);
         return;
     }
 
@@ -37,7 +37,6 @@ void handle_client(int fd, const char *client_ip)
             {
                 logger("Request too large from: %s, closing connection.", ERROR, client_ip);
                 free(buf);
-                close(fd);
                 return;
             }
 
@@ -47,7 +46,6 @@ void handle_client(int fd, const char *client_ip)
             {
                 critical_logger("realloc failed");
                 free(buf);
-                close(fd);
                 return;
             }
 
@@ -58,8 +56,7 @@ void handle_client(int fd, const char *client_ip)
 
     if (nbytes == 0)
     {
-        logger("Client disconnected: %s", INFO, client_ip);
-        close(fd);
+        /// logger("Client disconnected: %s", INFO, client_ip);
         return;
     }
     else if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
@@ -67,7 +64,6 @@ void handle_client(int fd, const char *client_ip)
         char *err = strdup(strerror(errno));
         logger("recv: %s", ERROR, err);
         free(err);
-        close(fd);
         return;
     }
 

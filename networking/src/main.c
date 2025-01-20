@@ -12,9 +12,10 @@
 #include <sys/event.h>
 #include <sys/time.h>
 
+#include "../include/html_res.h"
+#include "../include/response_t.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
-#include "../include/handler.h"
 
 #define MAX_EVENTS 64
 #define BUFFER_SIZE 1024
@@ -113,9 +114,7 @@ int main(void)
     int kq = kqueue();
     if (kq == -1)
     {
-        char *err = strdup(strerror(errno));
-        logger("kqueue: %s", ERROR, err);
-        free(err);
+        perror("kqueue");
         exit(1);
     }
 
@@ -176,8 +175,47 @@ int main(void)
             }
             else if (events[i].filter == EVFILT_READ)
             {
-                handle_client(fd, inet_ntop(remoteaddr.ss_family,
-                                            get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+                // Client data ready to read
+                char buf[BUFFER_SIZE];
+                // todo handle buffer overflow
+                ssize_t nbytes = recv(fd, buf, sizeof(buf) - 1, 0);
+
+                if (nbytes <= 0)
+                {
+                    if (nbytes == 0)
+                    {
+                        logger("Connection closed: %s", INFO,
+                               inet_ntop(remoteaddr.ss_family,
+                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+                    }
+                    else
+                    {
+                        char *err = strdup(strerror(errno));
+                        logger("recv: %s", ERROR, err);
+                        free(err);
+                    }
+
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    close(fd);
+                }
+                else
+                {
+                    buf[nbytes] = '\0';
+                    logger("Received data from socket %d: %s", INFO, fd, buf);
+
+                    // Send a response
+                    ResultChar response = html_response("hello.html");
+                    if (response.ty == Ok)
+                    {
+                        send(fd, response.val.res, strlen(response.val.res), 0);
+                    }
+                    else
+                    {
+                        logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
+                    }
+
+                    free_result_char(&response);
+                }
             }
         }
     }

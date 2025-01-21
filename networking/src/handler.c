@@ -4,22 +4,37 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <sys/event.h>
 
 #include "../include/logger.h"
 #include "../include/response_t.h"
 #include "../include/html_res.h"
+#include "../include/handler.h"
+
+#define ERR_413 "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/plain\r\nContent-Length: 42\r\nConnection: close\r\n\r\nPayload Too Large. Request entity too big."
 
 #define INITIAL_BUFFER_SIZE 1024
 #define MAX_REQUEST_SIZE 65536
 
-// TODO: this is not working at all
-void handle_client(int fd, const char *client_ip)
+void add_event(int kq, int fd, int filter, int flags)
+{
+    struct kevent ev;
+    EV_SET(&ev, fd, filter, flags, 0, 0, NULL);
+    if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1)
+    {
+        perror("kevent add");
+        exit(1);
+    }
+}
+
+void handle_client(int fd, int kq, const char *client_ip)
 {
     size_t buf_size = INITIAL_BUFFER_SIZE;
     char *buf = malloc(buf_size);
     if (!buf)
     {
         critical_logger("failed to allocate");
+        add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
 
@@ -37,6 +52,8 @@ void handle_client(int fd, const char *client_ip)
             {
                 logger("Request too large from: %s, closing connection.", ERROR, client_ip);
                 free(buf);
+                send(fd, ERR_413, strlen(ERR_413), 0);
+                add_event(kq, fd, EVFILT_READ, EV_DELETE);
                 return;
             }
 
@@ -46,6 +63,7 @@ void handle_client(int fd, const char *client_ip)
             {
                 critical_logger("realloc failed");
                 free(buf);
+                add_event(kq, fd, EVFILT_READ, EV_DELETE);
                 return;
             }
 
@@ -56,7 +74,8 @@ void handle_client(int fd, const char *client_ip)
 
     if (nbytes == 0)
     {
-        /// logger("Client disconnected: %s", INFO, client_ip);
+        logger("Client disconnected: %s", INFO, client_ip);
+        add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
     else if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
@@ -64,6 +83,11 @@ void handle_client(int fd, const char *client_ip)
         char *err = strdup(strerror(errno));
         logger("recv: %s", ERROR, err);
         free(err);
+        add_event(kq, fd, EVFILT_READ, EV_DELETE);
+        return;
+    }
+    else if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    {
         return;
     }
 

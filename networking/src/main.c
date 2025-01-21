@@ -16,6 +16,7 @@
 #include "../include/response_t.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
+#include "../include/handler.h"
 
 #define MAX_EVENTS 64
 #define BUFFER_SIZE 1024
@@ -91,17 +92,6 @@ int get_listener_socket(void)
     return listener;
 }
 
-void add_event(int kq, int fd, int filter, int flags)
-{
-    struct kevent ev;
-    EV_SET(&ev, fd, filter, flags, 0, 0, NULL);
-    if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1)
-    {
-        perror("kevent add");
-        exit(1);
-    }
-}
-
 int main(void)
 {
     int listener; // Listening socket descriptor
@@ -175,46 +165,10 @@ int main(void)
             }
             else if (events[i].filter == EVFILT_READ)
             {
-                // Client data ready to read
-                char buf[BUFFER_SIZE];
-                // todo handle buffer overflow
-                ssize_t nbytes = recv(fd, buf, sizeof(buf) - 1, 0);
-
-                if (nbytes <= 0)
-                {
-                    if (nbytes == 0)
-                    {
-                        logger("Connection closed: %s", INFO,
-                               inet_ntop(remoteaddr.ss_family,
-                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
-                    }
-                    else
-                    {
-                        char *err = strdup(strerror(errno));
-                        logger("recv: %s", ERROR, err);
-                        free(err);
-                    }
-
-                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                }
-                else
-                {
-                    buf[nbytes] = '\0';
-                    logger("Received data from socket %d: %s", INFO, fd, buf);
-
-                    // Send a response
-                    ResultChar response = html_response("hello.html");
-                    if (response.ty == Ok)
-                    {
-                        send(fd, response.val.res, strlen(response.val.res), 0);
-                    }
-                    else
-                    {
-                        logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
-                    }
-
-                    free_result_char(&response);
-                }
+                // TODO: Handle partial responses for when the socket buffer is full
+                handle_client(fd, kq,
+                              inet_ntop(remoteaddr.ss_family,
+                                        get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
         }
     }

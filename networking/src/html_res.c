@@ -87,6 +87,7 @@ ResultChar html_response(const char *template_path)
     }
 
     sprintf(response, OK_200, content_length, html_response.val.res);
-    // free_result_char(&html_response);
+    // Do not free the html since it is cached, this should be refactored for sure
+    // Since having to know this fact here is not good
     return result_char(Ok, response);
 }

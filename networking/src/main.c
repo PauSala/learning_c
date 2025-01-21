@@ -129,6 +129,7 @@ int main(void)
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
+        logger("Got %d events", INFO, nev);
         if (nev == -1)
         {
             char *err = strdup(strerror(errno));
@@ -165,10 +166,18 @@ int main(void)
             }
             else if (events[i].filter == EVFILT_READ)
             {
+                logger("EVFILT_READ %d", INFO, fd);
                 // TODO: Handle partial responses for when the socket buffer is full
-                handle_client(fd, kq,
-                              inet_ntop(remoteaddr.ss_family,
-                                        get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+                handle_request(fd, kq,
+                               inet_ntop(remoteaddr.ss_family,
+                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+            }
+            else if (events[i].flags & EVFILT_WRITE)
+            {
+                logger("EVFILT_WRITE %d", INFO, fd);
+                handle_response(fd, kq,
+                                inet_ntop(remoteaddr.ss_family,
+                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
         }
     }

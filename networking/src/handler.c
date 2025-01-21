@@ -27,7 +27,7 @@ void add_event(int kq, int fd, int filter, int flags)
     }
 }
 
-void handle_client(int fd, int kq, const char *client_ip)
+void handle_request(int fd, int kq, const char *client_ip)
 {
     size_t buf_size = INITIAL_BUFFER_SIZE;
     char *buf = malloc(buf_size);
@@ -86,16 +86,20 @@ void handle_client(int fd, int kq, const char *client_ip)
         add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
-    else if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
-    {
-        return;
-    }
 
     logger("Received data from %s: \n%s\n", INFO, client_ip, buf);
 
+    // Add event to write response
+    add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
+}
+
+void handle_response(int fd, int kq, const char *client_ip)
+{
     ResultChar response = html_response("hello.html");
     if (response.ty == Ok)
     {
+        // ssize_t sent_bytes = send(fd, response.val.res, strlen(response.val.res), 0);
+        // Here can happen than the buffer is full and we need to wait for the socket to be ready to write
         send(fd, response.val.res, strlen(response.val.res), 0);
     }
     else
@@ -105,5 +109,11 @@ void handle_client(int fd, int kq, const char *client_ip)
 
     free_result_char(&response);
 
-    free(buf);
+    logger("Closing connection from %s", INFO, client_ip);
+
+    // Remove filters
+    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+    // Close the file descriptor
+    close(fd);
 }

@@ -23,7 +23,6 @@ ResultChar read_html_file(const char *file_path)
 
     if (cached_html != NULL)
     {
-        logger("Cached html", INFO);
         return result_char(Ok, cached_html);
     }
 

@@ -167,7 +167,6 @@ int main(void)
             else if (events[i].filter == EVFILT_READ)
             {
                 logger("EVFILT_READ %d", INFO, fd);
-                // TODO: Handle partial responses for when the socket buffer is full
                 handle_request(fd, kq,
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));

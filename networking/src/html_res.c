@@ -76,7 +76,8 @@ ResultChar html_response(const char *template_path)
         return html_response;
     }
 
-    int content_length = strlen(html_response.val.res);
+    // TODO: This is wrong
+    int content_length = strlen(html_response.val.res) + 1;
 
     // Format the response with the HTML content
     int len = strlen(OK_200) + content_length + 1;
@@ -89,6 +90,6 @@ ResultChar html_response(const char *template_path)
 
     snprintf(response, len, OK_200, content_length, html_response.val.res);
     // Do not free the html since it is cached, this should be refactored for sure
-    // Since having to know this fact here is not good
+    // Since having to know this fact here is horribly wrong
     return result_char(Ok, response);
 }

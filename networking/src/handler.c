@@ -21,7 +21,7 @@
 #define HASH_SIZE 1024
 
 // Hash table for connections
-PendingResponse *connection_table[HASH_SIZE] = {0};
+PendingResponse *connection_table[HASH_SIZE] = {NULL};
 
 int hash_fd(int fd)
 {
@@ -46,6 +46,7 @@ PendingResponse *find_connection(int fd)
     PendingResponse *curr = connection_table[index];
     while (curr)
     {
+        logger("Current: %d %p %p %d", ERROR, curr->fd, curr->start, curr->data, curr->next);
         if (curr->fd == fd)
             return curr;
         curr = curr->next;
@@ -168,8 +169,20 @@ void handle_response(int fd, int kq, const char *client_ip)
         bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
         if (bytes_sent < (int)strlen(response.val.res))
         {
-            logger("Data does not fit in response", DEBUG);
-            insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
+            logger("Data does not fit in response: %d, bytes_sent: %d", DEBUG, strlen(response.val.res), bytes_sent);
+            if (old)
+            {
+                logger("And old item exists and will be used", DEBUG);
+                old->start = response.val.res;
+                old->data = response.val.res + bytes_sent;
+                old->active = 1;
+                old->fd = fd;
+            }
+            else
+            {
+                logger("insert_new_connection", DEBUG);
+                insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
+            }
             return;
         }
         else

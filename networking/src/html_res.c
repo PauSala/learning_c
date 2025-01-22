@@ -60,7 +60,7 @@ ResultChar read_html_file(const char *file_path)
 
     // Read the file into the buffer
     fread(cached_html, 1, file_size, file);
-    cached_html[file_size] = '\0';
+    cached_html[file_size - 1] = '\0';
 
     fclose(file);
     return result_char(Ok, cached_html);
@@ -84,10 +84,10 @@ ResultChar html_response(const char *template_path)
     }
 
     // TODO: This is wrong
-    int content_length = strlen(html_response.val.res) + 1;
+    int content_length = strlen(html_response.val.res);
 
     // Format the response with the HTML content
-    int len = strlen(OK_200) + content_length + 1;
+    int len = strlen(OK_200) + content_length + 4;
     cached_res = (char *)malloc(len);
     if (!cached_res)
     {

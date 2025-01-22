@@ -16,7 +16,6 @@
 #define MERROR "FAILED TO ALLOCATE"
 
 static char *cached_html = NULL;
-static size_t cached_html_size = 0;
 
 ResultChar read_html_file(const char *file_path)
 {
@@ -64,12 +63,20 @@ ResultChar read_html_file(const char *file_path)
     cached_html[file_size] = '\0';
 
     fclose(file);
-    cached_html_size = file_size;
     return result_char(Ok, cached_html);
 }
 
+static char *cached_res = NULL;
+
 ResultChar html_response(const char *template_path)
 {
+
+    if (cached_res != NULL)
+    {
+        logger("Cached response", ERROR);
+        return result_char(Ok, cached_res);
+    }
+
     ResultChar html_response = read_html_file(template_path);
     if (html_response.ty == Err)
     {
@@ -81,15 +88,15 @@ ResultChar html_response(const char *template_path)
 
     // Format the response with the HTML content
     int len = strlen(OK_200) + content_length + 1;
-    char *response = (char *)malloc(len);
-    if (!response)
+    cached_res = (char *)malloc(len);
+    if (!cached_res)
     {
         critical_logger("Failed to allocate");
         return result_char(Err, MEMORY_E);
     }
 
-    snprintf(response, len, OK_200, content_length, html_response.val.res);
+    snprintf(cached_res, len, OK_200, content_length, html_response.val.res);
     // Do not free the html since it is cached, this should be refactored for sure
     // Since having to know this fact here is horribly wrong
-    return result_char(Ok, response);
+    return result_char(Ok, cached_res);
 }

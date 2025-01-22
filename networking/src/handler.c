@@ -153,7 +153,6 @@ void handle_response(int fd, int kq, const char *client_ip)
         {
             logger("Sending pending data has worked well.", DEBUG);
             old->active = 0;
-            free(old->start);
             old->data = NULL;
             old->start = NULL;
             add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
@@ -188,13 +187,11 @@ void handle_response(int fd, int kq, const char *client_ip)
         else
         {
             logger("All data fits in response", DEBUG);
-            free_result_char(&response);
         }
     }
     else
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
-        free_result_char(&response);
         send(fd, ERR_500, strlen(ERR_500), 0);
     }
 

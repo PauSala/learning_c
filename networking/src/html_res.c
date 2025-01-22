@@ -79,14 +79,15 @@ ResultChar html_response(const char *template_path)
     int content_length = strlen(html_response.val.res);
 
     // Format the response with the HTML content
-    char *response = (char *)malloc(strlen(OK_200) + content_length + 1);
+    int len = strlen(OK_200) + content_length + 1;
+    char *response = (char *)malloc(len);
     if (!response)
     {
         critical_logger("Failed to allocate");
         return result_char(Err, MEMORY_E);
     }
 
-    sprintf(response, OK_200, content_length, html_response.val.res);
+    snprintf(response, len, OK_200, content_length, html_response.val.res);
     // Do not free the html since it is cached, this should be refactored for sure
     // Since having to know this fact here is not good
     return result_char(Ok, response);

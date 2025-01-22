@@ -12,9 +12,46 @@
 #include "../include/handler.h"
 
 #define ERR_413 "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/plain\r\nContent-Length: 42\r\nConnection: close\r\n\r\nPayload Too Large. Request entity too big."
+#define ERR_500 "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\nContent-Length: 44\r\nConnection: close\r\n\r\nInternal Server Error. Something went wrong."
 
 #define INITIAL_BUFFER_SIZE 1024
 #define MAX_REQUEST_SIZE 65536
+
+// Hash size
+#define HASH_SIZE 1024
+
+// Hash table for connections
+PendingResponse *connection_table[HASH_SIZE] = {0};
+
+int hash_fd(int fd)
+{
+    return fd % HASH_SIZE;
+}
+
+void insert_new_connection(int fd, char *data, char *start)
+{
+    int index = hash_fd(fd);
+    PendingResponse *new_response = malloc(sizeof(PendingResponse));
+    new_response->fd = fd;
+    new_response->data = data;
+    new_response->start = start;
+    new_response->active = 1;
+    new_response->next = connection_table[index];
+    connection_table[index] = new_response;
+}
+
+PendingResponse *find_connection(int fd)
+{
+    int index = hash_fd(fd);
+    PendingResponse *curr = connection_table[index];
+    while (curr)
+    {
+        if (curr->fd == fd)
+            return curr;
+        curr = curr->next;
+    }
+    return NULL;
+}
 
 void add_event(int kq, int fd, int filter, int flags)
 {
@@ -75,6 +112,7 @@ void handle_request(int fd, int kq, const char *client_ip)
     if (nbytes == 0)
     {
         logger("Client disconnected: %s", INFO, client_ip);
+        add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
         add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
@@ -83,6 +121,7 @@ void handle_request(int fd, int kq, const char *client_ip)
         char *err = strdup(strerror(errno));
         logger("recv: %s", ERROR, err);
         free(err);
+        add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
         add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
@@ -95,19 +134,53 @@ void handle_request(int fd, int kq, const char *client_ip)
 
 void handle_response(int fd, int kq, const char *client_ip)
 {
-    ResultChar response = html_response("hello.html");
+    ssize_t bytes_sent;
+    PendingResponse *old = find_connection(fd);
+    if (old != NULL && old->active)
+    {
+        logger("Reading %d bytes of pending data.", DEBUG, strlen(old->data));
+        bytes_sent = send(fd, old->data, strlen(old->data), 0);
+        if (bytes_sent < (int)strlen(old->data))
+        {
+            old->data = old->data + bytes_sent;
+            return;
+        }
+        else
+        {
+            logger("Sending pending data has worked well.", DEBUG);
+            old->active = 0;
+            free(old->start);
+            old->data = NULL;
+            old->start = NULL;
+            add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+            add_event(kq, fd, EVFILT_READ, EV_DELETE);
+            close(fd);
+            return;
+        }
+    }
+
+    ResultChar response = html_response("hello_large.html");
     if (response.ty == Ok)
     {
-        // ssize_t sent_bytes = send(fd, response.val.res, strlen(response.val.res), 0);
-        // Here can happen than the buffer is full and we need to wait for the socket to be ready to write
-        send(fd, response.val.res, strlen(response.val.res), 0);
+        bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
+        if (bytes_sent < (int)strlen(response.val.res))
+        {
+            logger("Data does not fit in response", DEBUG);
+            insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
+            return;
+        }
+        else
+        {
+            logger("All data fits in response", DEBUG);
+            free_result_char(&response);
+        }
     }
     else
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
+        free_result_char(&response);
+        send(fd, ERR_500, strlen(ERR_500), 0);
     }
-
-    free_result_char(&response);
 
     logger("Closing connection from %s", INFO, client_ip);
 

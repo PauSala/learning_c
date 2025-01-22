@@ -130,11 +130,14 @@ void handle_request(int fd, int kq, const char *client_ip)
 
     // Add event to write response
     add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
+    free(buf);
 }
 
 void handle_response(int fd, int kq, const char *client_ip)
 {
     ssize_t bytes_sent;
+
+    // Is there already a connection waiting for more data to be read?
     PendingResponse *old = find_connection(fd);
     if (old != NULL && old->active)
     {

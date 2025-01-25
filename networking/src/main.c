@@ -18,7 +18,9 @@
 #include "../include/errors.h"
 #include "../include/handler.h"
 
-#define MAX_EVENTS 64
+#define OK_200 "HTTP/1.1 200 OK\r\nContent-Length:2\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nOK"
+
+#define MAX_EVENTS 2048
 #define BUFFER_SIZE 1024
 
 #define PORT "3000"
@@ -98,7 +100,7 @@ int main(void)
     int newfd;    // Newly accepted socket
     struct sockaddr_storage remoteaddr;
     socklen_t addrlen;
-    char remoteIP[INET6_ADDRSTRLEN];
+    // char remoteIP[INET6_ADDRSTRLEN];
 
     // Create kqueue
     int kq = kqueue();
@@ -129,19 +131,17 @@ int main(void)
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
-        logger("Got %d events", INFO, nev);
+        // logger("Got %d events", INFO, nev);
+        printf("\n\n-------------- Got %d events--------------------\n", nev);
         if (nev == -1)
         {
-            char *err = strdup(strerror(errno));
-            logger("kevent: %s", ERROR, err);
-            free(err);
+            perror("kevents");
             exit(1);
         }
 
         for (int i = 0; i < nev; i++)
         {
             int fd = (int)events[i].ident;
-
             if (fd == listener)
             {
                 // Accept new connection
@@ -149,39 +149,85 @@ int main(void)
                 newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
                 if (newfd == -1)
                 {
-                    char *err = strdup(strerror(errno));
-                    logger("accept: %s", ERROR, err);
-                    free(err);
+                    perror("accept");
                 }
                 else
                 {
                     // Make new socket non-blocking
                     fcntl(newfd, F_SETFL, O_NONBLOCK);
-                    logger("New connection from %s on socket %d", INFO,
-                           inet_ntop(remoteaddr.ss_family,
-                                     get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN),
-                           newfd);
+                    printf("New connection  on socket %d\n", newfd);
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
+                continue;
+            }
+            else if (events[i].flags & EV_EOF)
+            {
+                printf("EOF: %d fflags: %d\n", fd, events[i].fflags);
+                close(fd);
             }
             else if (events[i].filter == EVFILT_READ)
             {
-                logger("EVFILT_READ %d", INFO, fd);
-                handle_request(fd, kq,
-                               inet_ntop(remoteaddr.ss_family,
-                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+                // logger("EVFILT_READ %d", INFO, fd);
+                printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
+                char data[events[i].data];
+                int nbytes = recv(fd, data, events[i].data, 0);
+                if (nbytes == 0)
+                {
+                    // logger("Read bytes == 0", ERROR);
+                    printf("Read bytes == 0\n");
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+                    close(fd);
+                    continue;
+                }
+                else if (nbytes < 0)
+                {
+                    // logger("Read bytes < 0", ERROR);
+                    printf("Read bytes < 0\n");
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+                    close(fd);
+                    continue;
+                }
+
+                if (nbytes < events[i].data)
+                {
+                    printf("Pending bytes to read %ld\n", events[i].data - nbytes);
+                }
+
+                printf("Data: \n %s\n", data);
+                add_event(kq, fd, EVFILT_READ, EV_DISABLE);
+                add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
             }
             else if (events[i].filter & EVFILT_WRITE)
             {
-                logger("EVFILT_WRITE %d", INFO, fd);
-                handle_response(fd, kq,
-                                inet_ntop(remoteaddr.ss_family,
-                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
-            }
-            else if (events[i].flags == EV_EOF)
-            {
-                logger("Closing connection %d", INFO, fd);
-                close(fd);
+                int available = events[i].data;
+                printf("EVFILT_WRITE %d Bytes: %d\n", fd, available);
+
+                if ((unsigned long)available < strlen(OK_200))
+                {
+                    printf("Response does not fit in available bytes\n");
+                }
+                size_t nbytes = send(fd, OK_200, strlen(OK_200), 0);
+                if (nbytes == 0)
+                {
+                    printf("Write bytes == \n0");
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+                    close(fd);
+                    continue;
+                }
+                else if (nbytes < 0)
+                {
+                    printf("Write bytes < 0\n");
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+                    close(fd);
+                    continue;
+                }
+
+                add_event(kq, fd, EVFILT_READ, EV_ADD | EV_ENABLE);
+                add_event(kq, fd, EVFILT_WRITE, EV_DISABLE);
             }
         }
     }

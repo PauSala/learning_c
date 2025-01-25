@@ -61,7 +61,7 @@ void add_event(int kq, int fd, int filter, int flags)
     if (kevent(kq, &ev, 1, NULL, 0, NULL) == -1)
     {
         perror("kevent add");
-        exit(1);
+        // exit(1);
     }
 }
 

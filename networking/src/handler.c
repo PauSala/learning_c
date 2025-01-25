@@ -91,7 +91,7 @@ void handle_request(int fd, int kq, const char *client_ip)
                 logger("Request too large from: %s, closing connection.", ERROR, client_ip);
                 free(buf);
                 send(fd, ERR_413, strlen(ERR_413), 0);
-                add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                close(fd);
                 return;
             }
 
@@ -101,7 +101,7 @@ void handle_request(int fd, int kq, const char *client_ip)
             {
                 critical_logger("realloc failed");
                 free(buf);
-                add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                close(fd);
                 return;
             }
 
@@ -113,7 +113,6 @@ void handle_request(int fd, int kq, const char *client_ip)
     if (nbytes == 0)
     {
         logger("Client disconnected: %s", INFO, client_ip);
-        add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
         add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
@@ -122,13 +121,12 @@ void handle_request(int fd, int kq, const char *client_ip)
         char *err = strdup(strerror(errno));
         logger("recv: %s", ERROR, err);
         free(err);
-        add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
         add_event(kq, fd, EVFILT_READ, EV_DELETE);
         return;
     }
 
-    // logger("Received data from %s: \n%s\n", INFO, client_ip, buf);
-    logger("Start parsing\n", INFO);
+    logger("Start parsing: %d\n", INFO, strlen(buf));
+
     Span body = {.start = 0, .len = 0};
     Span url = {.start = 0, .len = 0};
     Span version = {.start = 0, .len = 0};
@@ -143,10 +141,8 @@ void handle_request(int fd, int kq, const char *client_ip)
     parse_request(&parser, buf);
     http_request_to_string(&parser, buf);
 
-    logger("End parsing\n", INFO);
-
     // Add event to write response
-    add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
+    add_event(kq, fd, EVFILT_WRITE, EV_ADD);
     free(buf);
 }
 
@@ -172,13 +168,11 @@ void handle_response(int fd, int kq, const char *client_ip)
             old->data = NULL;
             old->start = NULL;
             add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-            add_event(kq, fd, EVFILT_READ, EV_DELETE);
-            close(fd);
             return;
         }
     }
 
-    ResultChar response = html_response("hello_large.html");
+    ResultChar response = html_response("hello.html");
     if (response.ty == Ok)
     {
         bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
@@ -211,11 +205,11 @@ void handle_response(int fd, int kq, const char *client_ip)
         send(fd, ERR_500, strlen(ERR_500), 0);
     }
 
-    logger("Closing connection from %s", INFO, client_ip);
+    logger("Closing connection after write from %s", INFO, client_ip);
 
-    // Remove filters
+    // // Remove filters
+    // add_event(kq, fd, EVFILT_READ, EV_DELETE);
     add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-    // Close the file descriptor
+    // // Close the file descriptor
     close(fd);
 }

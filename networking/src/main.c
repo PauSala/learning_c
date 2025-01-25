@@ -63,7 +63,7 @@ int get_listener_socket(void)
         {
             continue;
         }
-        // Lose the pesky "address already in use" error message
+        // Lose the "address already in use" error message
         setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
         if (bind(listener, p->ai_addr, p->ai_addrlen) < 0)
@@ -164,11 +164,6 @@ int main(void)
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
             }
-            else if (events[i].flags == EV_EOF)
-            {
-                logger("Closing connection %d", INFO, fd);
-                close(fd);
-            }
             else if (events[i].filter == EVFILT_READ)
             {
                 logger("EVFILT_READ %d", INFO, fd);
@@ -182,6 +177,11 @@ int main(void)
                 handle_response(fd, kq,
                                 inet_ntop(remoteaddr.ss_family,
                                           get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+            }
+            else if (events[i].flags == EV_EOF)
+            {
+                logger("Closing connection %d", INFO, fd);
+                close(fd);
             }
         }
     }

@@ -164,6 +164,11 @@ int main(void)
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
             }
+            else if (events[i].flags == EV_EOF)
+            {
+                logger("Closing connection %d", INFO, fd);
+                close(fd);
+            }
             else if (events[i].filter == EVFILT_READ)
             {
                 logger("EVFILT_READ %d", INFO, fd);
@@ -171,7 +176,7 @@ int main(void)
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
-            else if (events[i].flags & EVFILT_WRITE)
+            else if (events[i].filter & EVFILT_WRITE)
             {
                 logger("EVFILT_WRITE %d", INFO, fd);
                 handle_response(fd, kq,

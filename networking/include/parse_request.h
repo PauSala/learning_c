@@ -162,6 +162,9 @@ typedef struct
 int parse_request(HttpParser *parser, char *req);
 void http_request_to_string(HttpParser *parser, char *req);
 
+// private
+bool eor(HttpParser *parser);
+
 // Implementations
 static int resize_http_headers_array(HttpHeadersArray *array)
 {
@@ -216,9 +219,12 @@ void http_request_to_string(HttpParser *parser, char *req)
     printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
 }
 
+#define MAX_METHOD_LEN 7
+
 // Helper function to match methods
 HttpMethod get_method(const char *req, size_t index)
 {
+
     if (req[index] == 'G')
     {
         if (strncmp(req, "GET", 3) == 0)
@@ -288,7 +294,14 @@ int parse_method(HttpParser *parser, char *req)
         parser->state = PARSER_ERROR;
         return 1;
     }
-    HttpMethod method = get_method(req, 0);
+
+    if (parser->input_len < MAX_METHOD_LEN)
+    {
+        parser->state = PARSER_ERROR;
+        return 1;
+    }
+
+    HttpMethod method = get_method(req, parser->start);
     if (method == UNKNOWN_METHOD)
     {
         parser->state = PARSER_ERROR;
@@ -329,7 +342,7 @@ void advance_curr(HttpParser *parser)
 
 bool consume_crfl(HttpParser *parser, char *req)
 {
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
         parser->state = PARSER_ERROR;
         return false;
@@ -340,7 +353,7 @@ bool consume_crfl(HttpParser *parser, char *req)
         return false;
     }
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
         parser->state = PARSER_ERROR;
         return false;
@@ -350,7 +363,7 @@ bool consume_crfl(HttpParser *parser, char *req)
         return false;
     }
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
         parser->state = PARSER_ERROR;
         return false;
@@ -387,8 +400,9 @@ int parse_version(HttpParser *parser, char *req)
     while (EXPECT_CHARACTER(req[parser->curr]))
     {
         advance_curr(parser);
-        if (parser->curr > parser->input_len)
+        if (eor(parser))
         {
+            parser->state = PARSER_ERROR;
             break;
         }
     }
@@ -411,7 +425,7 @@ int parse_body(HttpParser *parser, char *req)
     while (IS_CHAR(req[parser->curr]))
     {
         advance_curr(parser);
-        if (parser->curr > parser->input_len)
+        if (eor(parser))
         {
             break;
         }
@@ -435,8 +449,9 @@ int parse_header(HttpParser *parser, char *req)
     while (IS_TOKEN(req[parser->curr]))
     {
         advance_curr(parser);
-        if (parser->curr > parser->input_len)
+        if (eor(parser))
         {
+            parser->state = PARSER_ERROR;
             break;
         }
     }
@@ -455,8 +470,9 @@ int parse_header(HttpParser *parser, char *req)
     }
 
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
+        parser->state = PARSER_ERROR;
         return 1;
     }
     if (req[parser->curr] != SP)
@@ -466,15 +482,17 @@ int parse_header(HttpParser *parser, char *req)
     }
 
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
+        parser->state = PARSER_ERROR;
         return 1;
     }
     while (IS_VALUE(req[parser->curr]))
     {
         advance_curr(parser);
-        if (parser->curr > parser->input_len)
+        if (eor(parser))
         {
+            parser->state = PARSER_ERROR;
             break;
         }
     }
@@ -490,6 +508,11 @@ int parse_header(HttpParser *parser, char *req)
     return 0;
 }
 
+bool eor(HttpParser *parser)
+{
+    return parser->curr >= parser->input_len;
+}
+
 int parse_request(HttpParser *parser, char *req)
 {
     // TODO: start parsing from current state!
@@ -502,7 +525,7 @@ int parse_request(HttpParser *parser, char *req)
         return 1;
     }
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
         parser->state = PARSER_ERROR;
         return 1;
@@ -516,7 +539,7 @@ int parse_request(HttpParser *parser, char *req)
         return 1;
     }
     advance(parser);
-    if (parser->curr > parser->input_len)
+    if (eor(parser))
     {
         parser->state = PARSER_ERROR;
         return 1;

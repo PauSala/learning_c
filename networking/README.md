@@ -12,6 +12,8 @@
 ## Roadmap
 
 - [ ] Parse HTTP requests and send appropriate responses.
+  - [x] naive HTTP parser
+  - [ ] handle EOF
 - [ ] Serve any file from the "public" folder.
 - [ ] Implement caching for requested files/responses.
 - [ ] Parse and handle JSON request bodies?

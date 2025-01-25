@@ -10,6 +10,7 @@
 #include "../include/response_t.h"
 #include "../include/html_res.h"
 #include "../include/handler.h"
+#include "../include/parse_request.h"
 
 #define ERR_413 "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/plain\r\nContent-Length: 42\r\nConnection: close\r\n\r\nPayload Too Large. Request entity too big."
 #define ERR_500 "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\nContent-Length: 44\r\nConnection: close\r\n\r\nInternal Server Error. Something went wrong."
@@ -46,7 +47,6 @@ PendingResponse *find_connection(int fd)
     PendingResponse *curr = connection_table[index];
     while (curr)
     {
-        logger("Current: %d %p %p %d", ERROR, curr->fd, curr->start, curr->data, curr->next);
         if (curr->fd == fd)
             return curr;
         curr = curr->next;
@@ -127,7 +127,23 @@ void handle_request(int fd, int kq, const char *client_ip)
         return;
     }
 
-    logger("Received data from %s: \n%s\n", INFO, client_ip, buf);
+    // logger("Received data from %s: \n%s\n", INFO, client_ip, buf);
+    logger("Start parsing\n", INFO);
+    Span body = {.start = 0, .len = 0};
+    Span url = {.start = 0, .len = 0};
+    Span version = {.start = 0, .len = 0};
+    HttpHeadersArray headers = {NULL, 0, 0};
+    HttpRequest req = {.headers = &headers, .body = body, .url = url, .version = version};
+    HttpParser parser = {
+        .input_len = strlen(buf),
+        .state = START,
+        .start = 0,
+        .curr = 0,
+        .request = &req};
+    parse_request(&parser, buf);
+    http_request_to_string(&parser, buf);
+
+    logger("End parsing\n", INFO);
 
     // Add event to write response
     add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);

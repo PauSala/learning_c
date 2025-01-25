@@ -73,7 +73,6 @@ ResultChar html_response(const char *template_path)
 
     if (cached_res != NULL)
     {
-        logger("Cached response", ERROR);
         return result_char(Ok, cached_res);
     }
 

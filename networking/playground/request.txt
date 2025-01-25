@@ -1,0 +1,10 @@
+GET / HTTP/1.1
+accept-encoding: gzip, deflate, br
+Accept: */*
+User-Agent: Thunder Client (https://www.thunderclient.com)
+Host: localhost:3000
+
+{
+    "name": "John",
+    "age:: 34,
+} 

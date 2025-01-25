@@ -4,7 +4,7 @@
 
 ## Done
 
-- [x] Multiplexed connections through kqueue (yes, only macOS for now :'().
+- [x] Multiplexed connections through kqueue.
 - [x] Handling partial writes for large response files.
 - [x] A simple console logger.
 - [x] Experimenting with a result type using macros.

@@ -99,7 +99,7 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
 
     else if (nbytes == 0)
     {
-        logger("Connection closed by peer: %s", INFO, client_ip);
+        logger("Connection closed by peer: %s", DEBUG, client_ip);
         close(fd);
         return;
     }
@@ -145,7 +145,7 @@ void handle_response(int fd, const char *client_ip)
         }
         if (bytes_sent == 0)
         {
-            printf("Write: Connection closed by peer.\n");
+            logger("Write: Connection closed by peer.", DEBUG);
             close(fd);
             return;
         }
@@ -154,7 +154,7 @@ void handle_response(int fd, const char *client_ip)
             old->data = old->data + bytes_sent;
             return;
         }
-        logger("Sending pending data has worked well.", DEBUG);
+        logger("All pending data has been sent!", DEBUG);
         old->active = 0;
         old->data = NULL;
         old->start = NULL;
@@ -179,7 +179,7 @@ void handle_response(int fd, const char *client_ip)
     }
     if (bytes_sent == 0)
     {
-        printf("Write: Connection closed by peer.\n");
+        logger("Write: Connection closed by peer.", DEBUG);
         close(fd);
         return;
     }
@@ -201,7 +201,7 @@ void handle_response(int fd, const char *client_ip)
         }
         return;
     }
-    logger("Closing connection after write from %s", INFO, client_ip);
+    logger("Closing connection after write from %s", DEBUG, client_ip);
     // // Close the file descriptor
     shutdown(fd, SHUT_WR);
     return;

@@ -130,7 +130,7 @@ int main(void)
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
-        printf("\n\n-------------- Got %d events--------------------\n", nev);
+        // printf("\n\n-------------- Got %d events--------------------\n", nev);
         if (nev == -1)
         {
             perror("kevents");
@@ -153,7 +153,7 @@ int main(void)
                 {
                     // Make new socket non-blocking
                     fcntl(newfd, F_SETFL, O_NONBLOCK);
-                    printf("New connection  on socket %d\n", newfd);
+                    // printf("New connection  on socket %d\n", newfd);
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
             }
@@ -166,14 +166,14 @@ int main(void)
 
             else if (events[i].filter == EVFILT_READ)
             {
-                printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
+                // printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
                 handle_request(events[i], fd, kq,
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
             else if (events[i].filter == EVFILT_WRITE)
             {
-                printf("EVFILT_WRITE socket: %d \n", fd);
+                // printf("EVFILT_WRITE socket: %d \n", fd);
                 handle_response(fd,
                                 inet_ntop(remoteaddr.ss_family,
                                           get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));

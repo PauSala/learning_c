@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "../include/html_res.h"
 #include "../include/response_t.h"
@@ -19,6 +20,7 @@
 #include "../include/handler.h"
 
 #define OK_200 "HTTP/1.1 200 OK\r\nContent-Length:2\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nOK"
+#define BAD_REQUEST_400 "HTTP/1.1 400 Bad Request\r\nContent-Length:11\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nBad Request"
 
 #define MAX_EVENTS 2048
 #define BUFFER_SIZE 1024
@@ -87,7 +89,7 @@ int get_listener_socket(void)
     logger("Listening on %s:%s", INFO, HOST, PORT);
 
     // Listen
-    if (listen(listener, 10) == -1)
+    if (listen(listener, 4096) == -1)
     {
         return -1;
     }
@@ -123,7 +125,7 @@ int main(void)
 
     // Add listener socket to kqueue
     logger("Adding listener", INFO);
-    add_event(kq, listener, EVFILT_READ, EV_ADD | EV_ENABLE);
+    add_event(kq, listener, EVFILT_READ, EV_ADD);
 
     struct kevent events[MAX_EVENTS];
 
@@ -131,7 +133,6 @@ int main(void)
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
-        // logger("Got %d events", INFO, nev);
         printf("\n\n-------------- Got %d events--------------------\n", nev);
         if (nev == -1)
         {
@@ -158,76 +159,55 @@ int main(void)
                     printf("New connection  on socket %d\n", newfd);
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
-                continue;
             }
             else if (events[i].flags & EV_EOF)
             {
                 printf("EOF: %d fflags: %d\n", fd, events[i].fflags);
                 close(fd);
+                continue;
             }
+
             else if (events[i].filter == EVFILT_READ)
             {
-                // logger("EVFILT_READ %d", INFO, fd);
                 printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
-                char data[events[i].data];
+
+                char data[events[i].data > 0 ? events[i].data : 1];
                 int nbytes = recv(fd, data, events[i].data, 0);
-                if (nbytes == 0)
+                if (nbytes < 0)
                 {
-                    // logger("Read bytes == 0", ERROR);
-                    printf("Read bytes == 0\n");
-                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
+                    if (errno == EWOULDBLOCK || errno == EAGAIN)
+                    {
+                        printf("Operation would block, try again later.\n");
+                    }
+                    else
+                    {
+                        perror("read");
+                        close(fd);
+                    }
+                }
+                else if (nbytes == 0)
+                {
+                    if (errno == EWOULDBLOCK || errno == EAGAIN)
+                    {
+                        printf("nbytes == 0 => Operation would block, try again later.\n");
+                    }
+                    // Handle end of file
+                    printf("Connection closed by peer.\n");
                     close(fd);
-                    continue;
                 }
-                else if (nbytes < 0)
+                else
                 {
-                    // logger("Read bytes < 0", ERROR);
-                    printf("Read bytes < 0\n");
-                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-                    close(fd);
-                    continue;
+                    printf("Read %d bytes.\n", nbytes);
+                    printf("Received data: %.*s\n", nbytes, data);
+                    add_event(kq, newfd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
                 }
-
-                if (nbytes < events[i].data)
-                {
-                    printf("Pending bytes to read %ld\n", events[i].data - nbytes);
-                }
-
-                printf("Data: \n %s\n", data);
-                add_event(kq, fd, EVFILT_READ, EV_DISABLE);
-                add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
             }
-            else if (events[i].filter & EVFILT_WRITE)
+
+            else if (events[i].filter == EVFILT_WRITE)
             {
-                int available = events[i].data;
-                printf("EVFILT_WRITE %d Bytes: %d\n", fd, available);
-
-                if ((unsigned long)available < strlen(OK_200))
-                {
-                    printf("Response does not fit in available bytes\n");
-                }
-                size_t nbytes = send(fd, OK_200, strlen(OK_200), 0);
-                if (nbytes == 0)
-                {
-                    printf("Write bytes == \n0");
-                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-                    close(fd);
-                    continue;
-                }
-                else if (nbytes < 0)
-                {
-                    printf("Write bytes < 0\n");
-                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-                    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-                    close(fd);
-                    continue;
-                }
-
-                add_event(kq, fd, EVFILT_READ, EV_ADD | EV_ENABLE);
-                add_event(kq, fd, EVFILT_WRITE, EV_DISABLE);
+                printf("EVFILT_WRITE socket: %d \n", fd);
+                send(fd, OK_200, strlen(OK_200), 0);
+                close(fd);
             }
         }
     }

@@ -15,5 +15,5 @@ A relatively fast sudoku solver.
 
 ## Advice
 
-Any of those projects is ready for production an never will be.
+Any of those projects is ready for production and never will be.
 All contain for sure errors, memory leaks, and all kind of monstrosities due to the fact that I am learning.

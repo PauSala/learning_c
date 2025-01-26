@@ -19,9 +19,6 @@
 #include "../include/errors.h"
 #include "../include/handler.h"
 
-#define OK_200 "HTTP/1.1 200 OK\r\nContent-Length:2\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nOK"
-#define BAD_REQUEST_400 "HTTP/1.1 400 Bad Request\r\nContent-Length:11\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nBad Request"
-
 #define MAX_EVENTS 2048
 #define BUFFER_SIZE 1024
 
@@ -177,38 +174,9 @@ int main(void)
             else if (events[i].filter == EVFILT_WRITE)
             {
                 printf("EVFILT_WRITE socket: %d \n", fd);
-                int response_len = strlen(OK_200);
-                int nbytes = send(fd, OK_200, response_len, 0);
-                if (nbytes < 0)
-                {
-                    if (errno == EWOULDBLOCK || errno == EAGAIN)
-                    {
-                        printf("Send: Operation would block, try again later.\n");
-                        // Just to see if this ever happens
-                        exit(1);
-                    }
-                    else
-                    {
-                        perror("write");
-                        close(fd);
-                    }
-                }
-                else if (nbytes == 0)
-                {
-                    printf("Write: Connection closed by peer.\n");
-                    close(fd);
-                }
-                else if (nbytes < response_len)
-                {
-                    printf("Write: not all data is writen.\n");
-                    // Just to see if this ever happens
-                    // TODO: handle
-                    exit(1);
-                }
-                else
-                {
-                    close(fd);
-                }
+                handle_response(events[i], fd, kq,
+                                inet_ntop(remoteaddr.ss_family,
+                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
         }
     }

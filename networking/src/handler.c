@@ -12,8 +12,10 @@
 #include "../include/handler.h"
 #include "../include/parse_request.h"
 
+#define OK_200 "HTTP/1.1 200 OK\r\nContent-Length:2\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nOK"
 #define ERR_413 "HTTP/1.1 413 Payload Too Large\r\nContent-Type: text/plain\r\nContent-Length: 42\r\nConnection: close\r\n\r\nPayload Too Large. Request entity too big."
 #define ERR_500 "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\nContent-Length: 44\r\nConnection: close\r\n\r\nInternal Server Error. Something went wrong."
+#define BAD_REQUEST_400 "HTTP/1.1 400 Bad Request\r\nContent-Length:11\r\nContent-Type: text/html\r\nConnection: close\r\n\r\nBad Request"
 
 #define INITIAL_BUFFER_SIZE 1024
 #define MAX_REQUEST_SIZE 65536
@@ -124,8 +126,41 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
     free(buf);
 }
 
-void handle_response(int fd, int kq, const char *client_ip)
+void handle_response(struct kevent event, int fd, int kq, const char *client_ip)
 {
+    // ResultChar response = html_response("hello_large.html");
+    // if (response.ty == Err)
+    // {
+    //     exit(1);
+    // }
+    // char *res = response.val.res;
+    // int response_len = strlen(response.val.res);
+
+    // int nbytes = send(fd, res, response_len, 0);
+    // if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
+    // {
+    //     perror("write");
+    //     close(fd);
+    //     return;
+    // }
+    // if (nbytes == 0)
+    // {
+    //     printf("Write: Connection closed by peer.\n");
+    //     close(fd);
+    //     return;
+    // }
+    // if (nbytes < response_len)
+    // {
+    //     printf("Write: not all data is writen.\n");
+    //     // Just to see if this ever happens
+    //     // TODO: handle
+    //     exit(1);
+    //     return;
+    // }
+    // printf("Sending %d bytes to %s, %d readed\n", response_len, client_ip, nbytes);
+    // shutdown(fd, SHUT_WR);
+    // return;
+
     ssize_t bytes_sent;
 
     // Is there already a connection waiting for more data to be read?
@@ -133,61 +168,74 @@ void handle_response(int fd, int kq, const char *client_ip)
     if (old != NULL && old->active)
     {
         logger("Reading %d bytes of pending data.", DEBUG, strlen(old->data));
+
         bytes_sent = send(fd, old->data, strlen(old->data), 0);
+        if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
+        {
+            perror("write");
+            close(fd);
+            return;
+        }
+        if (bytes_sent == 0)
+        {
+            printf("Write: Connection closed by peer.\n");
+            close(fd);
+            return;
+        }
         if (bytes_sent < (int)strlen(old->data))
         {
             old->data = old->data + bytes_sent;
             return;
         }
-        else
-        {
-            logger("Sending pending data has worked well.", DEBUG);
-            old->active = 0;
-            old->data = NULL;
-            old->start = NULL;
-            add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
-            return;
-        }
+        logger("Sending pending data has worked well.", DEBUG);
+        old->active = 0;
+        old->data = NULL;
+        old->start = NULL;
+        shutdown(fd, SHUT_WR);
+        return;
     }
 
-    ResultChar response = html_response("hello.html");
-    if (response.ty == Ok)
-    {
-        bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
-        if (bytes_sent < (int)strlen(response.val.res))
-        {
-            logger("Data does not fit in response: %d, bytes_sent: %d", DEBUG, strlen(response.val.res), bytes_sent);
-            if (old)
-            {
-                logger("And old item exists and will be used", DEBUG);
-                old->start = response.val.res;
-                old->data = response.val.res + bytes_sent;
-                old->active = 1;
-                old->fd = fd;
-            }
-            else
-            {
-                logger("insert_new_connection", DEBUG);
-                insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
-            }
-            return;
-        }
-        else
-        {
-            logger("All data fits in response", DEBUG);
-        }
-    }
-    else
+    ResultChar response = html_response("hello_large.html");
+    if (response.ty == Err)
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
         send(fd, ERR_500, strlen(ERR_500), 0);
+        close(fd);
     }
 
+    bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
+    if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
+    {
+        perror("write");
+        close(fd);
+        return;
+    }
+    if (bytes_sent == 0)
+    {
+        printf("Write: Connection closed by peer.\n");
+        close(fd);
+        return;
+    }
+    if (bytes_sent < (int)strlen(response.val.res))
+    {
+        logger("Data does not fit in response: %d, bytes_sent: %d", DEBUG, strlen(response.val.res), bytes_sent);
+        if (old)
+        {
+            logger("And old item exists and will be used", DEBUG);
+            old->start = response.val.res;
+            old->data = response.val.res + bytes_sent;
+            old->active = 1;
+            old->fd = fd;
+        }
+        else
+        {
+            logger("insert_new_connection", DEBUG);
+            insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
+        }
+        return;
+    }
     logger("Closing connection after write from %s", INFO, client_ip);
-
-    // // Remove filters
-    // add_event(kq, fd, EVFILT_READ, EV_DELETE);
-    add_event(kq, fd, EVFILT_WRITE, EV_DELETE);
     // // Close the file descriptor
-    close(fd);
+    shutdown(fd, SHUT_WR);
+    return;
 }

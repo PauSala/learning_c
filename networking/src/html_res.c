@@ -8,7 +8,7 @@
 #include "../include/response_t.h"
 #include "../include/errors.h"
 
-#define OK_200 "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\n\r\n%s"
+#define OK_200 "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n%s"
 #define TEMPLATE_PATH "public"
 #define MAX_PATH_LENGTH 1024
 #define PATH_TOO_LONG "Combined path is too long"

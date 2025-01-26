@@ -1,6 +1,7 @@
 # HTTP Server
 
 - A server to explore and practice some C concepts.
+- I've used Brian “Beej Jorgensen” Hall [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/split/index.html) as a starting point.
 
 ## Warning
 

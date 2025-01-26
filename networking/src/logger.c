@@ -5,10 +5,17 @@
 #include "../include/logger.h"
 
 #define BUFFER_SIZE 1024
+#define DEBUG_SERVER "DEBUG_C_SERVER"
 
 // Logging function that formats and logs messages
 void logger(const char *format, LogLevel level, ...)
 {
+
+    if (level == DEBUG && !getenv(DEBUG_SERVER))
+    {
+        return;
+    }
+
     const char *level_str = NULL;
 
     switch (level)

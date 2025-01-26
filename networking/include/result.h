@@ -1,5 +1,5 @@
-#ifndef RESPONSE_T
-#define RESPONSE_T
+#ifndef RESULT_H
+#define RESULT_H
 
 #include "errors.h"
 
@@ -48,17 +48,11 @@ DEF_RESULT(int, Int)
 #define DEF_FREE_RESULT(free_func, input_type, name) \
     void free_result_##name(input_type *result)      \
     {                                                \
-        const char *env_var = "DEBUG_C_SERVER";      \
-        char *value = getenv(env_var);               \
         if (!result)                                 \
             return;                                  \
                                                      \
         if (result->ty == Ok)                        \
         {                                            \
-            if (value != NULL)                       \
-            {                                        \
-                logger("Freeing result", DEBUG);     \
-            }                                        \
             free_func(result->val.res);              \
         }                                            \
     }

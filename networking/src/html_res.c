@@ -5,7 +5,7 @@
 #include <errno.h>
 #include "../include/html_res.h"
 #include "../include/logger.h"
-#include "../include/response_t.h"
+#include "../include/result.h"
 #include "../include/errors.h"
 
 #define OK_200 "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n%s"

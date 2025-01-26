@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 #include "../include/logger.h"
-#include "../include/response_t.h"
+#include "../include/result.h"
 
 // * char
 DEF_BUILD_RESULT(ResultChar, char *, char)

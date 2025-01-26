@@ -14,7 +14,7 @@
 #include <time.h>
 
 #include "../include/html_res.h"
-#include "../include/response_t.h"
+#include "../include/result.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
 #include "../include/handler.h"
@@ -121,7 +121,7 @@ int main(void)
     fcntl(listener, F_SETFL, O_NONBLOCK);
 
     // Add listener socket to kqueue
-    logger("Adding listener", INFO);
+    logger("Adding listener", DEBUG);
     add_event(kq, listener, EVFILT_READ, EV_ADD);
 
     struct kevent events[MAX_EVENTS];
@@ -130,7 +130,7 @@ int main(void)
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);
-        // printf("\n\n-------------- Got %d events--------------------\n", nev);
+        logger("\n\n-------------- Got %d events--------------------\n", DEBUG, nev);
         if (nev == -1)
         {
             perror("kevents");
@@ -159,21 +159,21 @@ int main(void)
             }
             else if (events[i].flags & EV_EOF)
             {
-                printf("EOF: %d fflags: %d\n", fd, events[i].fflags);
+                logger("EOF: %d fflags: %d", DEBUG, fd, events[i].fflags);
                 close(fd);
                 continue;
             }
 
             else if (events[i].filter == EVFILT_READ)
             {
-                // printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
+                logger("EVFILT_READ socket: %d | data: %ld", DEBUG, fd, events[i].data);
                 handle_request(events[i], fd, kq,
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }
             else if (events[i].filter == EVFILT_WRITE)
             {
-                // printf("EVFILT_WRITE socket: %d \n", fd);
+                logger("EVFILT_WRITE socket: %d", DEBUG, fd);
                 handle_response(fd,
                                 inet_ntop(remoteaddr.ss_family,
                                           get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));

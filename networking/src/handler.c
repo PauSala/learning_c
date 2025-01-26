@@ -7,7 +7,7 @@
 #include <sys/event.h>
 
 #include "../include/logger.h"
-#include "../include/response_t.h"
+#include "../include/result.h"
 #include "../include/html_res.h"
 #include "../include/handler.h"
 #include "../include/parse_request.h"
@@ -50,7 +50,9 @@ PendingResponse *find_connection(int fd)
     while (curr)
     {
         if (curr->fd == fd)
+        {
             return curr;
+        }
         curr = curr->next;
     }
     return NULL;
@@ -72,7 +74,7 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
 
     if (event.data > MAX_REQUEST_SIZE)
     {
-        logger("Request too large from %s, closing connection.", ERROR, client_ip);
+        logger("Request too large from %s, closing connection.", DEBUG, client_ip);
         send(fd, ERR_413, strlen(ERR_413), 0);
         close(fd);
         return;
@@ -120,7 +122,6 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
     parse_request(&parser, buf);
     http_request_to_string(&parser, buf);
 
-    // Add event to write response
     add_event(kq, fd, EVFILT_WRITE, EV_ADD);
     add_event(kq, fd, EVFILT_READ, EV_DELETE);
     free(buf);
@@ -163,6 +164,7 @@ void handle_response(int fd, const char *client_ip)
     }
 
     ResultChar response = html_response("hello.html");
+    // ResultChar response = html_response("hello_large.html");
     if (response.ty == Err)
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
@@ -202,7 +204,8 @@ void handle_response(int fd, const char *client_ip)
         return;
     }
     logger("Closing connection after write from %s", DEBUG, client_ip);
-    // // Close the file descriptor
+
+    // TODO: Close or shutdown?
     shutdown(fd, SHUT_WR);
     return;
 }

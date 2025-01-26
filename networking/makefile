@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra -pedantic -std=c99 # -fsanitize=address,undefined
-SRCS = src/main.c src/html_res.c src/logger.c src/response_t.c src/errors.c src/handler.c
+SRCS = src/main.c src/html_res.c src/logger.c src/result.c src/errors.c src/handler.c
 OBJS = $(SRCS:.c=.o)
 OUTDIR = out
 TARGET = $(OUTDIR)/http_server

@@ -44,7 +44,7 @@ To print the `DEBUG` logs just set the `DEBUG_C_SERVER` variable:
 
 ### Test
 
-- In the `tests` folder there is a bash script to run `wrk` against the server. Just uncommend or copy and run the line you are interested in.
+- In the `tests` folder there is a bash script to run `wrk` against the server. Just uncommend the line you are interested in and run the script.
 - The `server.js` is a node server to use as a benchmark when using `wrk`[^1].
 
 [^1]: I was receiving errors with `wrk` for 12 threads and 400 connections, and then realized that Node wasn't able to handle this setup either on my computer. So, I tried a config that does not generate errors with Node and then tested it with my server.

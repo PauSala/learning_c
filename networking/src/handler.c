@@ -126,7 +126,7 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
     free(buf);
 }
 
-void handle_response(struct kevent event, int fd, int kq, const char *client_ip)
+void handle_response(int fd, const char *client_ip)
 {
     ssize_t bytes_sent;
 
@@ -162,7 +162,7 @@ void handle_response(struct kevent event, int fd, int kq, const char *client_ip)
         return;
     }
 
-    ResultChar response = html_response("hello_large.html");
+    ResultChar response = html_response("hello.html");
     if (response.ty == Err)
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");

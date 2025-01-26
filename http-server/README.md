@@ -25,15 +25,15 @@
 
 ### Compile and run
 
-> $`make`
+> make
 
 or
 
-> \$`make rebuild`
+> `make rebuild`
 
 and
 
-> `./out/http_server`
+> ./out/http_server
 
 ### Debug
 

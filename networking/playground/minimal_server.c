@@ -1,3 +1,6 @@
+// Minimal working example
+// This `wrk -t6 -c100 -d1s http://127.0.0.1:3000` passes the tests with no errors
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

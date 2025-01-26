@@ -128,39 +128,6 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
 
 void handle_response(struct kevent event, int fd, int kq, const char *client_ip)
 {
-    // ResultChar response = html_response("hello_large.html");
-    // if (response.ty == Err)
-    // {
-    //     exit(1);
-    // }
-    // char *res = response.val.res;
-    // int response_len = strlen(response.val.res);
-
-    // int nbytes = send(fd, res, response_len, 0);
-    // if (nbytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-    // {
-    //     perror("write");
-    //     close(fd);
-    //     return;
-    // }
-    // if (nbytes == 0)
-    // {
-    //     printf("Write: Connection closed by peer.\n");
-    //     close(fd);
-    //     return;
-    // }
-    // if (nbytes < response_len)
-    // {
-    //     printf("Write: not all data is writen.\n");
-    //     // Just to see if this ever happens
-    //     // TODO: handle
-    //     exit(1);
-    //     return;
-    // }
-    // printf("Sending %d bytes to %s, %d readed\n", response_len, client_ip, nbytes);
-    // shutdown(fd, SHUT_WR);
-    // return;
-
     ssize_t bytes_sent;
 
     // Is there already a connection waiting for more data to be read?

@@ -29,7 +29,7 @@
 
 or
 
-> `make rebuild`
+> make rebuild
 
 and
 

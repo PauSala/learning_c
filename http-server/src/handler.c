@@ -35,6 +35,12 @@ void insert_new_connection(int fd, char *data, char *start)
 {
     int index = hash_fd(fd);
     PendingResponse *new_response = malloc(sizeof(PendingResponse));
+    if (!new_response)
+    {
+        perror("malloc on insert_new_connection");
+        exit(1);
+    }
+
     new_response->fd = fd;
     new_response->data = data;
     new_response->start = start;

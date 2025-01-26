@@ -1,4 +1,4 @@
-// clang -Wall -Wextra -pedantic -std=c99 main.c -o main
+// clang -Wall -Wextra -pedantic -std=c99 test_parser.c -o main
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

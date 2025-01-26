@@ -102,7 +102,7 @@ int main(void)
     int newfd;    // Newly accepted socket
     struct sockaddr_storage remoteaddr;
     socklen_t addrlen;
-    char remoteIP[INET6_ADDRSTRLEN];
+    // char remoteIP[INET6_ADDRSTRLEN];
 
     // Create kqueue
     int kq = kqueue();
@@ -169,10 +169,37 @@ int main(void)
 
             else if (events[i].filter == EVFILT_READ)
             {
+                // add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
                 printf("EVFILT_READ socket: %d | data: %ld\n", fd, events[i].data);
-                handle_request(events[i], fd, kq,
-                               inet_ntop(remoteaddr.ss_family,
-                                         get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+
+                char data[events[i].data > 0 ? events[i].data : 1];
+                int nbytes = recv(fd, data, events[i].data, 0);
+                if (nbytes < 0)
+                {
+                    if (errno == EWOULDBLOCK || errno == EAGAIN)
+                    {
+                        printf("Read: Operation would block, try again later.\n");
+                        // Just to see if this ever happens
+                        exit(1);
+                    }
+                    else
+                    {
+                        perror("read");
+                        close(fd);
+                    }
+                }
+                else if (nbytes == 0)
+                {
+                    printf("Read: Connection closed by peer.\n");
+                    close(fd);
+                }
+                else
+                {
+                    printf("Read %d bytes.\n", nbytes);
+                    printf("Received data: %.*s\n", nbytes, data);
+                    add_event(kq, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE);
+                    add_event(kq, fd, EVFILT_READ, EV_DELETE);
+                }
             }
             else if (events[i].filter == EVFILT_WRITE)
             {

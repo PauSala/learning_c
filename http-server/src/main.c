@@ -19,6 +19,7 @@
 #include "../include/errors.h"
 #include "../include/handler.h"
 
+#define SERVER_BACKLOG 2048
 #define MAX_EVENTS 2048
 #define BUFFER_SIZE 1024
 
@@ -86,7 +87,7 @@ int get_listener_socket(void)
     logger("Listening on %s:%s", INFO, HOST, PORT);
 
     // Listen
-    if (listen(listener, 4096) == -1)
+    if (listen(listener, SERVER_BACKLOG) == -1)
     {
         return -1;
     }

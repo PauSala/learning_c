@@ -39,7 +39,7 @@ and
 
 To print the `DEBUG` logs just set the `DEBUG_C_SERVER` variable:
 
-> $`export DEBUG_C_SERVER=1`
+> export DEBUG_C_SERVER=1
 
 ### Test
 

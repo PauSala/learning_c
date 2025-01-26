@@ -153,7 +153,7 @@ int main(void)
                 {
                     // Make new socket non-blocking
                     fcntl(newfd, F_SETFL, O_NONBLOCK);
-                    // printf("New connection  on socket %d\n", newfd);
+                    logger("New connection  on socket %d", DEBUG, newfd);
                     add_event(kq, newfd, EVFILT_READ, EV_ADD | EV_ENABLE);
                 }
             }

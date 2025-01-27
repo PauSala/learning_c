@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #define SP 32
 #define HT 9
@@ -48,7 +49,8 @@ typedef enum
     OPTIONS,
     TRACE,
     PATCH,
-    UNKNOWN_METHOD
+    UNKNOWN_METHOD,
+    NO_METHOD
 } HttpMethod;
 
 static const char *HTTP_METHODS[] = {
@@ -62,6 +64,7 @@ static const char *HTTP_METHODS[] = {
     "TRACE",
     "PATCH",
     "UNKNOWN_METHOD",
+    "",
 };
 
 const char *method_to_string(HttpMethod method)
@@ -103,6 +106,9 @@ size_t method_len(HttpMethod method)
     case UNKNOWN_METHOD:
         return 0;
         break;
+    case NO_METHOD:
+        return 0;
+        break;
     }
 }
 
@@ -141,16 +147,49 @@ typedef enum
     URL,
     VERSION,
     HEADERS,
-    HEADER_K,
-    HEADER_V,
+    HEADER,
+    NO_HEADERS,
+    HEADER_END,
     BODY,
-    DONE,
     PARSER_ERROR,
+    PARSER_EOF
 } ParserState;
+
+const char *parser_state_to_string(ParserState state)
+{
+    switch (state)
+    {
+    case START:
+        return "START";
+    case METHOD:
+        return "METHOD";
+    case URL:
+        return "URL";
+    case VERSION:
+        return "VERSION";
+    case HEADERS:
+        return "HEADERS";
+    case HEADER:
+        return "HEADER";
+    case NO_HEADERS:
+        return "NO_HEADERS";
+    case HEADER_END:
+        return "HEADER_END";
+    case BODY:
+        return "BODY";
+    case PARSER_ERROR:
+        return "PARSER_ERROR";
+    case PARSER_EOF:
+        return "PARSER_EOF";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 typedef struct
 {
     ParserState state;
+    bool eof;
     size_t start;
     size_t curr;
     HttpRequest *request;
@@ -164,6 +203,8 @@ void http_request_to_string(HttpParser *parser, char *req);
 
 // private
 bool eor(HttpParser *parser);
+void advance(HttpParser *parser);
+bool expect_white_space(HttpParser *parser, char *req);
 
 // Implementations
 static int resize_http_headers_array(HttpHeadersArray *array)
@@ -219,7 +260,27 @@ void http_request_to_string(HttpParser *parser, char *req)
     printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
 }
 
-#define MAX_METHOD_LEN 7
+// Checks if next character is SP. If EOF parser is marked as eof.
+// If not EOF and not whitespace, parser transitions to PARSER_ERROR.
+// If SP, cursor is advanced to the next char.
+bool expect_white_space(HttpParser *parser, char *req)
+{
+    if ((int)req[parser->curr] == 0)
+    {
+        parser->eof = true;
+        return false;
+    }
+    if ((int)req[parser->curr] != SP)
+    {
+        parser->state = PARSER_ERROR;
+        return false;
+    }
+    advance(parser);
+    return true;
+}
+
+//* * HTTP/*.*
+#define MIN_RLINE_LEN 12
 
 // Helper function to match methods
 HttpMethod get_method(const char *req, size_t index)
@@ -289,17 +350,7 @@ HttpMethod get_method(const char *req, size_t index)
 
 int parse_method(HttpParser *parser, char *req)
 {
-    if (parser->state != START)
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-
-    if (parser->input_len < MAX_METHOD_LEN)
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
+    assert(parser->state == METHOD);
 
     HttpMethod method = get_method(req, parser->start);
     if (method == UNKNOWN_METHOD)
@@ -311,22 +362,10 @@ int parse_method(HttpParser *parser, char *req)
     parser->request->method = method;
     parser->start = method_len(method);
     parser->curr = parser->start;
-    parser->state = METHOD;
+    parser->state = URL;
 
+    expect_white_space(parser, req);
     return 0;
-}
-
-bool expect_white_space(HttpParser *parser, char *req)
-{
-    if ((int)req[parser->curr] == 0)
-    {
-        return false;
-    }
-    if ((int)req[parser->curr] == SP)
-    {
-        return true;
-    }
-    return false;
 }
 
 void advance(HttpParser *parser)
@@ -344,7 +383,36 @@ bool consume_crfl(HttpParser *parser, char *req)
 {
     if (eor(parser))
     {
+        parser->eof = true;
+        return false;
+    }
+
+    if ((int)req[parser->curr] != CR)
+    {
         parser->state = PARSER_ERROR;
+        return false;
+    }
+    advance(parser);
+    if (eor(parser))
+    {
+        parser->eof = true;
+        return false;
+    }
+
+    if ((int)req[parser->curr] != LF)
+    {
+        parser->state = PARSER_ERROR;
+        return false;
+    }
+    advance(parser);
+    return true;
+}
+
+bool expect_crfl(HttpParser *parser, char *req)
+{
+    if (eor(parser))
+    {
+        parser->eof = true;
         return false;
     }
 
@@ -352,20 +420,15 @@ bool consume_crfl(HttpParser *parser, char *req)
     {
         return false;
     }
-    advance(parser);
-    if (eor(parser))
+
+    if ((int)req[parser->curr + 1] == 0)
     {
-        parser->state = PARSER_ERROR;
+        parser->eof = true;
         return false;
     }
-    if ((int)req[parser->curr] != LF)
+
+    if ((int)req[parser->curr + 1] != LF)
     {
-        return false;
-    }
-    advance(parser);
-    if (eor(parser))
-    {
-        parser->state = PARSER_ERROR;
         return false;
     }
     return true;
@@ -373,14 +436,20 @@ bool consume_crfl(HttpParser *parser, char *req)
 
 int parse_url(HttpParser *parser, char *req)
 {
-    while (EXPECT_CHARACTER(req[parser->curr]))
+    assert(parser->state == URL);
+    do
     {
-        advance_curr(parser);
-        if (parser->curr > parser->input_len)
+        if (eor(parser))
+        {
+            parser->eof = true;
+            return 1;
+        }
+        if (!EXPECT_CHARACTER(req[parser->curr]))
         {
             break;
         }
-    }
+        advance_curr(parser);
+    } while (true);
 
     if (parser->start == parser->curr)
     {
@@ -391,21 +460,27 @@ int parse_url(HttpParser *parser, char *req)
     parser->request->url.start = parser->start;
     parser->request->url.len = parser->curr - parser->start;
     parser->start = parser->curr;
-    parser->state = URL;
+    parser->state = VERSION;
+    expect_white_space(parser, req);
     return 0;
 }
 
 int parse_version(HttpParser *parser, char *req)
 {
-    while (EXPECT_CHARACTER(req[parser->curr]))
+    assert(parser->state == VERSION);
+    do
     {
-        advance_curr(parser);
         if (eor(parser))
         {
-            parser->state = PARSER_ERROR;
+            parser->eof = true;
+            return 1;
+        }
+        if (!EXPECT_CHARACTER(req[parser->curr]))
+        {
             break;
         }
-    }
+        advance_curr(parser);
+    } while (true);
 
     if (parser->start == parser->curr)
     {
@@ -416,20 +491,29 @@ int parse_version(HttpParser *parser, char *req)
     parser->request->version.start = parser->start;
     parser->request->version.len = parser->curr - parser->start;
     parser->start = parser->curr;
-    parser->state = VERSION;
+    parser->state = HEADER;
+
+    consume_crfl(parser, req);
     return 0;
 }
 
 int parse_body(HttpParser *parser, char *req)
 {
-    while (IS_CHAR(req[parser->curr]))
+    assert(parser->state == HEADER_END);
+
+    do
     {
-        advance_curr(parser);
         if (eor(parser))
+        {
+            parser->eof = true;
+            break;
+        }
+        if (!IS_CHAR(req[parser->curr]))
         {
             break;
         }
-    }
+        advance_curr(parser);
+    } while (true);
 
     if (parser->start == parser->curr)
     {
@@ -440,39 +524,51 @@ int parse_body(HttpParser *parser, char *req)
     parser->request->body.start = parser->start;
     parser->request->body.len = parser->curr - parser->start;
     parser->start = parser->curr;
-    parser->state = BODY;
+    parser->state = PARSER_EOF;
     return 0;
 }
 
 int parse_header(HttpParser *parser, char *req)
 {
+    size_t initial_start = parser->start;
+    assert(parser->state == HEADER);
+    if (eor(parser))
+    {
+        parser->eof = true;
+        return 1;
+    }
+
     while (IS_TOKEN(req[parser->curr]))
     {
         advance_curr(parser);
         if (eor(parser))
         {
-            parser->state = PARSER_ERROR;
-            break;
+            parser->eof = true;
+            return 1;
         }
     }
 
     if (parser->start == parser->curr)
     {
-        parser->state = PARSER_ERROR;
+        parser->state = NO_HEADERS;
         return 1;
     }
     Span key = {.start = parser->start, .len = parser->curr - parser->start};
     parser->start = parser->curr;
     if (req[parser->curr] != ':')
     {
-        parser->state = PARSER_ERROR;
+        parser->eof = true;
+        parser->start = initial_start;
+        parser->curr = initial_start;
         return 1;
     }
 
     advance(parser);
     if (eor(parser))
     {
-        parser->state = PARSER_ERROR;
+        parser->eof = true;
+        parser->start = initial_start;
+        parser->curr = initial_start;
         return 1;
     }
     if (req[parser->curr] != SP)
@@ -484,7 +580,9 @@ int parse_header(HttpParser *parser, char *req)
     advance(parser);
     if (eor(parser))
     {
-        parser->state = PARSER_ERROR;
+        parser->eof = true;
+        parser->start = initial_start;
+        parser->curr = initial_start;
         return 1;
     }
     while (IS_VALUE(req[parser->curr]))
@@ -492,8 +590,10 @@ int parse_header(HttpParser *parser, char *req)
         advance_curr(parser);
         if (eor(parser))
         {
-            parser->state = PARSER_ERROR;
-            break;
+            parser->eof = true;
+            parser->start = initial_start;
+            parser->curr = initial_start;
+            return 1;
         }
     }
 
@@ -505,6 +605,17 @@ int parse_header(HttpParser *parser, char *req)
     Span value = {.start = parser->start, .len = parser->curr - parser->start};
     insert_header(parser->request->headers, key, value);
     parser->start = parser->curr;
+
+    if (consume_crfl(parser, req))
+    {
+        if (expect_crfl(parser, req))
+        {
+            consume_crfl(parser, req);
+            parser->state = HEADER_END;
+            return 0;
+        }
+    }
+
     return 0;
 }
 
@@ -515,64 +626,40 @@ bool eor(HttpParser *parser)
 
 int parse_request(HttpParser *parser, char *req)
 {
-    // TODO: start parsing from current state!
 
-    // Parse method
-    parse_method(parser, req);
-    if (!expect_white_space(parser, req))
+    while (parser->state != PARSER_ERROR && parser->state != PARSER_EOF && !parser->eof)
     {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-    advance(parser);
-    if (eor(parser))
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-
-    // Parse URL
-    parse_url(parser, req);
-    if (!expect_white_space(parser, req))
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-    advance(parser);
-    if (eor(parser))
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-
-    // Parse Version
-    parse_version(parser, req);
-    if (!consume_crfl(parser, req))
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
-    }
-
-    while (!consume_crfl(parser, req))
-    {
-        parser->state = HEADERS;
-        parse_header(parser, req);
-        if (!consume_crfl(parser, req))
+        switch (parser->state)
         {
-            parser->state = PARSER_ERROR;
-            return 1;
+        case START:
+            if (parser->input_len < MIN_RLINE_LEN)
+            {
+                parser->eof = true;
+                break;
+            }
+            parser->state = METHOD;
+            break;
+        case METHOD:
+            parse_method(parser, req);
+            break;
+        case URL:
+            parse_url(parser, req);
+            break;
+        case VERSION:
+            parse_version(parser, req);
+            break;
+        case HEADER:
+            parse_header(parser, req);
+            break;
+        case HEADER_END:
+            parse_body(parser, req);
+            break;
+        default:
+            break;
         }
-    };
-
-    if (consume_crfl(parser, req))
-    {
-        parser->state = PARSER_ERROR;
-        return 1;
     }
-    // Parse body
-    parse_body(parser, req);
 
     return 0;
 }
 
-#endif
+#endif // PARSE_REQUEST_H

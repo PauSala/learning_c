@@ -506,6 +506,7 @@ int parse_body(HttpParser *parser, char *req)
         if (eor(parser))
         {
             parser->eof = true;
+            parser->state = PARSER_EOF;
             break;
         }
         if (!IS_CHAR(req[parser->curr]))
@@ -517,7 +518,7 @@ int parse_body(HttpParser *parser, char *req)
 
     if (parser->start == parser->curr)
     {
-        parser->state = PARSER_ERROR;
+        parser->state = PARSER_EOF;
         return 1;
     }
 
@@ -530,6 +531,13 @@ int parse_body(HttpParser *parser, char *req)
 
 int parse_header(HttpParser *parser, char *req)
 {
+    if (expect_crfl(parser, req))
+    {
+        consume_crfl(parser, req);
+        parser->state = HEADER_END;
+        return 0;
+    }
+
     size_t initial_start = parser->start;
     assert(parser->state == HEADER);
     if (eor(parser))
@@ -606,15 +614,7 @@ int parse_header(HttpParser *parser, char *req)
     insert_header(parser->request->headers, key, value);
     parser->start = parser->curr;
 
-    if (consume_crfl(parser, req))
-    {
-        if (expect_crfl(parser, req))
-        {
-            consume_crfl(parser, req);
-            parser->state = HEADER_END;
-            return 0;
-        }
-    }
+    consume_crfl(parser, req);
 
     return 0;
 }

@@ -15,14 +15,14 @@
 - [x] Partial writes.
   - Use a hashtable for partially writen sockets.
 - [x] Use wrk to test the server. For now it can handle at least the same amount of load than a simple node server.
+- [x] Http parser
+  - [ ] TODO: it is just a toy parser for getting the first line (method, url, version), the headers and the body. It not checks for valid urls, version, etc. It does not perform any semantinc interpretation of the headers, always parses the body and so on.
 - [ ] Cached responses
   - There is only a static html file which is cached on first request.
   - TODO: investigate caching!
 - [ ] Partial reads.
   - For now we are only handling GET requests
   - TODO: extend the server to handle other methods as well.
-- [ ] Http parser
-  - For now, it is just a naive parser with minimal error handling.
 
 ### Compile and run
 

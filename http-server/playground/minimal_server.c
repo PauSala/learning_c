@@ -17,7 +17,7 @@
 #include <time.h>
 
 #include "../include/html_res.h"
-#include "../include/response_t.h"
+#include "../include/result.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
 #include "../include/handler.h"

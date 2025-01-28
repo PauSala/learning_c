@@ -9,4 +9,5 @@ typedef struct PartialWrite
 void add_event(int kq, int fd, int filter, int flags);
 void handle_request(struct kevent *event, int fd, int kq, const char *client_ip);
 void handle_response(struct kevent *event, int fd, int kq, const char *client_ip);
+void clean_up(struct kevent *event, int fd);
 #endif

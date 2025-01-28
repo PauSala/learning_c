@@ -160,8 +160,7 @@ int main(void)
             }
             else if (events[i].flags & EV_EOF)
             {
-                logger("EOF: %d fflags: %d", DEBUG, fd, events[i].fflags);
-                close(fd);
+                clean_up(&events[i], fd);
                 continue;
             }
 

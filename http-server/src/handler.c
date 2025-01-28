@@ -169,3 +169,26 @@ void handle_response(struct kevent *event, int fd, int kq, const char *client_ip
     shutdown(fd, SHUT_WR);
     return;
 }
+
+void clean_up(struct kevent *event, int fd)
+{
+    if (event->filter == EVFILT_READ)
+    {
+        logger("EOF EVFILT_READ: %d fflags: %d", DEBUG, fd, event->fflags);
+        HttpParser *parser = (HttpParser *)event->udata;
+        if (parser)
+        {
+            free_parser(parser);
+        }
+    }
+    if (event->filter == EVFILT_WRITE)
+    {
+        logger("EOF EVFILT_WRITE: %d fflags: %d", DEBUG, fd, event->fflags);
+        PartialWrite *pw = (PartialWrite *)event->udata;
+        if (pw)
+        {
+            free(pw);
+        }
+    }
+    close(fd);
+}

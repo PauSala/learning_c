@@ -10,6 +10,7 @@
 
 ## Goals
 
+- [x] 0 dependencies, only the standard library and POSIX/System-Specific headers (like sys/socket.h, arpa/inet.h, sys/event.h etc.).
 - [x] Non blocking I/O with kqueue and event loop to handle incomming connections.
 - [x] Handle Non-Persistent Connections (no keep-alive, always send the `Connection: close` header).
 - [x] Partial reads for large requests.

@@ -75,18 +75,10 @@ void add_event(int kq, int fd, int filter, int flags)
     }
 }
 
-void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
+void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
 {
 
-    if (event.data > MAX_REQUEST_SIZE)
-    {
-        logger("Request too large from %s, closing connection.", DEBUG, client_ip);
-        send(fd, ERR_413, strlen(ERR_413), 0);
-        close(fd);
-        return;
-    }
-
-    size_t req_len = event.data > 0 ? event.data : 1;
+    size_t req_len = event->data > 0 ? event->data : 1;
     char *buf = malloc(req_len + 1);
     if (!buf)
     {
@@ -114,15 +106,36 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
 
     buf[nbytes] = '\0';
 
-    HttpParser *parser = init_parser(buf);
+    HttpParser *parser = (HttpParser *)event->udata;
+
+    if (!parser)
+    {
+        parser = init_parser(buf);
+    }
+    else
+    {
+        append_request(parser, buf);
+        parser->input_len = parser->input_len + nbytes;
+        parser->eof = false;
+    }
+
     parse_request(parser);
-    // http_request_to_string(parser);
 
-    printf("Parser state: %s\nData Read: %zu\nBody len: %zu\n", parser_state_to_string(parser->state), parser->input_len, parser->request->body.len);
+    printf("Parser state: %s\nData Read: %zu\nBody len: %zu\n",
+           parser_state_to_string(parser->state),
+           parser->input_len,
+           parser->request->body.len);
 
-    add_event(kq, fd, EVFILT_WRITE, EV_ADD);
-    add_event(kq, fd, EVFILT_READ, EV_DELETE);
-    free_parser(parser);
+    if (parser->state == END_PARSE || parser->start == PARSER_ERROR)
+    {
+        add_event(kq, fd, EVFILT_WRITE, EV_ADD);
+        add_event(kq, fd, EVFILT_READ, EV_DELETE);
+        free_parser(parser);
+        return;
+    }
+
+    event->udata = parser;
+    kevent(kq, event, 1, NULL, 0, NULL);
 }
 
 void handle_response(int fd, const char *client_ip)

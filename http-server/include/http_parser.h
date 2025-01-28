@@ -152,7 +152,7 @@ typedef enum
     HEADER_END,
     BODY,
     PARSER_ERROR,
-    PARSER_EOF
+    END_PARSE
 } ParserState;
 
 const char *parser_state_to_string(ParserState state)
@@ -179,8 +179,8 @@ const char *parser_state_to_string(ParserState state)
         return "BODY";
     case PARSER_ERROR:
         return "PARSER_ERROR";
-    case PARSER_EOF:
-        return "PARSER_EOF";
+    case END_PARSE:
+        return "END_PARSE";
     default:
         return "UNKNOWN";
     }
@@ -203,6 +203,8 @@ int parse_request(HttpParser *parser);
 void http_request_to_string(HttpParser *parser);
 HttpParser *init_parser(char *req);
 void free_parser(HttpParser *parser);
+void append_request(HttpParser *parser, char *data);
+HttpHeader *find_header(const char *key, HttpParser *parser);
 
 // private
 bool eor(HttpParser *parser);
@@ -277,6 +279,22 @@ void free_parser(HttpParser *parser)
     }
 }
 
+void append_request(HttpParser *parser, char *data)
+{
+    size_t old_len = parser->data ? strlen(parser->data) : 0;
+    size_t new_len = old_len + strlen(data);
+
+    char *new_buffer = realloc(parser->data, new_len + 1);
+    if (!new_buffer)
+    {
+        perror("realloc in append_request");
+        return;
+    }
+
+    strcpy(new_buffer + old_len, data);
+    parser->data = new_buffer;
+}
+
 static int resize_http_headers_array(HttpHeadersArray *array)
 {
     int new_capacity = array->capacity * 2;
@@ -315,6 +333,47 @@ int insert_header(HttpHeadersArray *array, Span key, Span value)
     return 0;
 }
 
+HttpHeader *find_header(const char *key, HttpParser *parser)
+{
+    if (!parser->request->headers)
+    {
+        return NULL;
+    }
+    for (int i = 0; i < parser->request->headers->length; i++)
+    {
+        HttpHeader *header = &parser->request->headers->headers[i];
+        char *header_key = parser->data + header->key.start;
+        size_t key_len = header->key.len;
+
+        if (strncmp(header_key, key, key_len) == 0 && strlen(key) == key_len)
+        {
+            return header;
+        }
+    }
+    return NULL;
+}
+
+long content_len(HttpParser *parser)
+{
+    HttpHeader *header = find_header("content-length", parser);
+    if (header)
+    {
+
+        char *value_str = strndup(parser->data + header->value.start, header->value.len);
+        if (value_str)
+        {
+            long content_length = strtol(value_str, NULL, 10);
+            free(value_str);
+
+            if (content_length > 0)
+            {
+                return content_length;
+            }
+        }
+    }
+    return -1;
+}
+
 void http_request_to_string(HttpParser *parser)
 {
     char *req = parser->data;
@@ -328,7 +387,8 @@ void http_request_to_string(HttpParser *parser)
                (int)(header->key.len), req + header->key.start,
                (int)(header->value.len), req + header->value.start);
     }
-    // printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
+    size_t body_len = parser->request->body.len < 10 ? 10 : parser->request->body.len;
+    printf("Body:\n%.*s...\n", (int)(body_len), req + body_len);
 }
 
 // Checks if next character is SP. If EOF parser is marked as eof.
@@ -570,14 +630,14 @@ int parse_version(HttpParser *parser, char *req)
 
 int parse_body(HttpParser *parser, char *req)
 {
-    assert(parser->state == HEADER_END);
-
+    assert(parser->state == HEADER_END || parser->state == BODY);
+    size_t initial_start = parser->request->body.start;
     do
     {
         if (eor(parser))
         {
             parser->eof = true;
-            parser->state = PARSER_EOF;
+            parser->state = END_PARSE;
             break;
         }
         if (!IS_CHAR(req[parser->curr]))
@@ -589,14 +649,27 @@ int parse_body(HttpParser *parser, char *req)
 
     if (parser->start == parser->curr)
     {
-        parser->state = PARSER_EOF;
+        parser->state = END_PARSE;
         return 1;
     }
 
-    parser->request->body.start = parser->start;
-    parser->request->body.len = parser->curr - parser->start;
+    parser->request->body.start = initial_start != 0 ? initial_start : parser->start;
+    parser->request->body.len = initial_start != 0 ? parser->curr - initial_start : parser->curr - parser->start;
     parser->start = parser->curr;
-    parser->state = PARSER_EOF;
+
+    long content_length = content_len(parser);
+
+    if ((long)parser->request->body.len < content_length)
+    {
+        printf("%zu < %ld\n", parser->request->body.len, content_length);
+        parser->state = BODY;
+        parser->eof = true;
+    }
+    else
+    {
+        parser->state = END_PARSE;
+    }
+
     return 0;
 }
 
@@ -698,7 +771,7 @@ bool eor(HttpParser *parser)
 int parse_request(HttpParser *parser)
 {
 
-    while (parser->state != PARSER_ERROR && parser->state != PARSER_EOF && !parser->eof)
+    while (parser->state != PARSER_ERROR && parser->state != END_PARSE && !parser->eof)
     {
         switch (parser->state)
         {
@@ -723,6 +796,9 @@ int parse_request(HttpParser *parser)
             parse_header(parser, parser->data);
             break;
         case HEADER_END:
+            parse_body(parser, parser->data);
+            break;
+        case BODY:
             parse_body(parser, parser->data);
             break;
         default:

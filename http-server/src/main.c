@@ -167,8 +167,8 @@ int main(void)
 
             else if (events[i].filter == EVFILT_READ)
             {
-                logger("EVFILT_READ socket: %d | data: %ld", DEBUG, fd, events[i].data);
-                handle_request(events[i], fd, kq,
+                logger("EVFILT_READ i: %d socket: %d | data: %ld", DEBUG, i, fd, events[i].data);
+                handle_request(&events[i], fd, kq,
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }

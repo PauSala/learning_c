@@ -81,7 +81,6 @@ int get_listener_socket(void)
 
     logger("Listening on %s:%s", INFO, HOST, PORT);
 
-    // Listen
     if (listen(listener, SERVER_BACKLOG) == -1)
     {
         return -1;

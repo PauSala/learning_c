@@ -265,19 +265,15 @@ void free_parser(HttpParser *parser)
         {
             if (parser->request->headers)
             {
-                printf("Free headers -> ");
                 free(parser->request->headers);
             }
             free(parser->request);
-            printf("Free request -> ");
         }
         if (parser->data)
         {
             free(parser->data);
-            printf("Free data ->  ");
         }
         free(parser);
-        printf("Free parser\n");
     }
 }
 

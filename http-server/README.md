@@ -11,7 +11,7 @@
 ## Goals
 
 - [x] Non blocking I/O with kqueue and event loop to handle incomming connections.
-- [x] Handle only Non-Persistent Connections (no keep-alive, always send the `Connection: close` header).
+- [x] Handle Non-Persistent Connections (no keep-alive, always send the `Connection: close` header).
 - [x] Partial reads for large requests.
 - [x] Partial writes for large responses.
 - [x] Http parser

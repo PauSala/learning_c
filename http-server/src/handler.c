@@ -87,12 +87,7 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
     }
 
     parse_request(parser);
-
-    logger("Parser state: %s\nData Read: %zu\nBody len: %zu\n",
-           DEBUG,
-           parser_state_to_string(parser->state),
-           parser->input_len,
-           parser->request->body.len);
+    http_request_to_string(parser);
 
     if (parser->state == END_PARSE || parser->start == PARSER_ERROR)
     {

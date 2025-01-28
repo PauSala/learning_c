@@ -1,6 +1,8 @@
 #ifndef PARSE_REQUEST_H
 #define PARSE_REQUEST_H
 
+#define PRINT_REQUEST "DEBUG_C_SERVER"
+
 // clang -Wall -Wextra -pedantic -std=c99 main.c -o main
 #include <stdio.h>
 #include <string.h>
@@ -376,6 +378,7 @@ long content_len(HttpParser *parser)
 
 void http_request_to_string(HttpParser *parser)
 {
+
     char *req = parser->data;
     printf("Method: %s\n", method_to_string(parser->request->method));
     printf("URL: %.*s\n", (int)(parser->request->url.len), req + parser->request->url.start);
@@ -387,8 +390,8 @@ void http_request_to_string(HttpParser *parser)
                (int)(header->key.len), req + header->key.start,
                (int)(header->value.len), req + header->value.start);
     }
-    size_t body_len = parser->request->body.len < 10 ? 10 : parser->request->body.len;
-    printf("Body:\n%.*s...\n", (int)(body_len), req + body_len);
+    // size_t body_len = parser->request->body.len < 10 ? 10 : parser->request->body.len;
+    printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
 }
 
 // Checks if next character is SP. If EOF parser is marked as eof.

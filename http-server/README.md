@@ -15,7 +15,7 @@
 - [x] Partial reads for large requests.
 - [x] Partial writes for large responses.
 - [x] Http parser
-  - [x] Parser based on a state machine for allowing partial reads on big requests.
+  - [x] Parser based on a state machine for allowing partial reads.
   - [x] Use kevent.udata to pass away the parser in the current state for each request.
   - [x] Parse method, url, version, headers and body.
   - [ ] TODO: Check for valid urls, version, etc. It does not perform any semantinc interpretation of the headers except for content-length.

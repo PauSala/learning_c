@@ -8,13 +8,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <sys/types.h>
 #include <sys/event.h>
-#include <sys/time.h>
-#include <time.h>
 
-#include "../include/html_res.h"
-#include "../include/result.h"
 #include "../include/logger.h"
 #include "../include/errors.h"
 #include "../include/handler.h"

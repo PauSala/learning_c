@@ -12,17 +12,19 @@
 
 - [x] Non blocking I/O with kqueue and event loop to handle incomming connections.
 - [x] Handle only Non-Persistent Connections (no keep-alive, always send the `Connection: close` header).
-- [x] Partial writes.
+- [x] Partial writes
   - Use a hashtable for partially writen sockets.
-- [x] Use wrk to test the server. For now it can handle at least the same amount of load than a simple node server.
+- [x] Partial reads
 - [x] Http parser
-  - [ ] TODO: it is just a toy parser for getting the first line (method, url, version), the headers and the body. It not checks for valid urls, version, etc. It does not perform any semantinc interpretation of the headers, always parses the body and so on.
+  - [x] Parser based on a state machine for allowing partial reads on big requests.
+  - [x] Use kevent.udata to pass away the parser in the current state for each request.
+  - [x] Parse method, url, version, headers and body.
+  - [ ] TODO: Check for valid urls, version, etc. It does not perform any semantinc interpretation of the headers except for content-length.
+- [x] Use wrk to test the server. For now it can handle at least the same amount of load than a simple node server.
 - [ ] Cached responses
   - There is only a static html file which is cached on first request.
   - TODO: investigate caching!
-- [ ] Partial reads.
-  - For now we are only handling GET requests
-  - TODO: extend the server to handle other methods as well.
+- [ ] Interpret requests and respond accordingly
 
 ### Compile and run
 

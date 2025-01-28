@@ -114,23 +114,15 @@ void handle_request(struct kevent event, int fd, int kq, const char *client_ip)
 
     buf[nbytes] = '\0';
 
-    Span body = {.start = 0, .len = 0};
-    Span url = {.start = 0, .len = 0};
-    Span version = {.start = 0, .len = 0};
-    HttpHeadersArray headers = {NULL, 0, 0};
-    HttpRequest req = {.headers = &headers, .body = body, .url = url, .version = version};
-    HttpParser parser = {
-        .input_len = strlen(buf),
-        .state = START,
-        .start = 0,
-        .curr = 0,
-        .request = &req};
-    parse_request(&parser, buf);
-    http_request_to_string(&parser, buf);
+    HttpParser *parser = init_parser(buf);
+    parse_request(parser);
+    // http_request_to_string(parser);
+
+    printf("Parser state: %s\nData Read: %zu\nBody len: %zu\n", parser_state_to_string(parser->state), parser->input_len, parser->request->body.len);
 
     add_event(kq, fd, EVFILT_WRITE, EV_ADD);
     add_event(kq, fd, EVFILT_READ, EV_DELETE);
-    free(buf);
+    free_parser(parser);
 }
 
 void handle_response(int fd, const char *client_ip)

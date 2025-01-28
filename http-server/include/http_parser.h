@@ -194,12 +194,15 @@ typedef struct
     size_t curr;
     HttpRequest *request;
     size_t input_len;
+    char *data;
 
 } HttpParser;
 
 // Public declarations
-int parse_request(HttpParser *parser, char *req);
-void http_request_to_string(HttpParser *parser, char *req);
+int parse_request(HttpParser *parser);
+void http_request_to_string(HttpParser *parser);
+HttpParser *init_parser(char *req);
+void free_parser(HttpParser *parser);
 
 // private
 bool eor(HttpParser *parser);
@@ -207,6 +210,77 @@ void advance(HttpParser *parser);
 bool expect_white_space(HttpParser *parser, char *req);
 
 // Implementations
+HttpParser *init_parser(char *buf)
+{
+    Span body = {.start = 0, .len = 0};
+    Span url = {.start = 0, .len = 0};
+    Span version = {.start = 0, .len = 0};
+    HttpHeadersArray *headers = malloc(sizeof(HttpHeadersArray));
+    if (!headers)
+    {
+        perror("malloc");
+        free(buf);
+        return NULL;
+    }
+    headers->capacity = 0;
+    headers->length = 0;
+    headers->headers = NULL;
+
+    HttpRequest *req = malloc(sizeof(HttpRequest));
+    if (!req)
+    {
+        perror("malloc");
+        free(buf);
+        return NULL;
+    }
+    req->headers = headers;
+    req->body = body;
+    req->url = url;
+    req->version = version;
+
+    HttpParser *parser = malloc(sizeof(HttpParser));
+    if (!parser)
+    {
+        perror("malloc");
+        free(buf);
+        free(req);
+        return NULL;
+    }
+    parser->input_len = strlen(buf);
+    parser->state = START;
+    parser->start = 0;
+    parser->curr = 0;
+    parser->request = req;
+    parser->data = buf;
+    parser->eof = false;
+
+    return parser;
+}
+
+void free_parser(HttpParser *parser)
+{
+    if (parser)
+    {
+        if (parser->request)
+        {
+            if (parser->request->headers)
+            {
+                printf("Free headers -> ");
+                free(parser->request->headers);
+            }
+            free(parser->request);
+            printf("Free request -> ");
+        }
+        if (parser->data)
+        {
+            free(parser->data);
+            printf("Free data ->  ");
+        }
+        free(parser);
+        printf("Free parser\n");
+    }
+}
+
 static int resize_http_headers_array(HttpHeadersArray *array)
 {
     int new_capacity = array->capacity * 2;
@@ -245,8 +319,9 @@ int insert_header(HttpHeadersArray *array, Span key, Span value)
     return 0;
 }
 
-void http_request_to_string(HttpParser *parser, char *req)
+void http_request_to_string(HttpParser *parser)
 {
+    char *req = parser->data;
     printf("Method: %s\n", method_to_string(parser->request->method));
     printf("URL: %.*s\n", (int)(parser->request->url.len), req + parser->request->url.start);
     printf("Version: %.*s\n", (int)(parser->request->version.len), req + parser->request->version.start);
@@ -257,7 +332,7 @@ void http_request_to_string(HttpParser *parser, char *req)
                (int)(header->key.len), req + header->key.start,
                (int)(header->value.len), req + header->value.start);
     }
-    printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
+    // printf("Body:\n%.*s\n", (int)(parser->request->body.len), req + parser->request->body.start);
 }
 
 // Checks if next character is SP. If EOF parser is marked as eof.
@@ -624,7 +699,7 @@ bool eor(HttpParser *parser)
     return parser->curr >= parser->input_len;
 }
 
-int parse_request(HttpParser *parser, char *req)
+int parse_request(HttpParser *parser)
 {
 
     while (parser->state != PARSER_ERROR && parser->state != PARSER_EOF && !parser->eof)
@@ -640,19 +715,19 @@ int parse_request(HttpParser *parser, char *req)
             parser->state = METHOD;
             break;
         case METHOD:
-            parse_method(parser, req);
+            parse_method(parser, parser->data);
             break;
         case URL:
-            parse_url(parser, req);
+            parse_url(parser, parser->data);
             break;
         case VERSION:
-            parse_version(parser, req);
+            parse_version(parser, parser->data);
             break;
         case HEADER:
-            parse_header(parser, req);
+            parse_header(parser, parser->data);
             break;
         case HEADER_END:
-            parse_body(parser, req);
+            parse_body(parser, parser->data);
             break;
         default:
             break;

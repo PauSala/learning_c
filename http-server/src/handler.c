@@ -89,7 +89,7 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
     parse_request(parser);
     http_request_to_string(parser);
 
-    if (parser->state == END_PARSE || parser->start == PARSER_ERROR)
+    if (parser->state == END_PARSE || parser->state == PARSER_ERROR)
     {
         add_event(kq, fd, EVFILT_WRITE, EV_ADD);
         add_event(kq, fd, EVFILT_READ, EV_DELETE);

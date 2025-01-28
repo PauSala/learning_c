@@ -12,9 +12,8 @@
 
 - [x] Non blocking I/O with kqueue and event loop to handle incomming connections.
 - [x] Handle only Non-Persistent Connections (no keep-alive, always send the `Connection: close` header).
-- [x] Partial writes
-  - Use a hashtable for partially writen sockets.
-- [x] Partial reads
+- [x] Partial reads for large requests.
+- [x] Partial writes for large responses.
 - [x] Http parser
   - [x] Parser based on a state machine for allowing partial reads on big requests.
   - [x] Use kevent.udata to pass away the parser in the current state for each request.

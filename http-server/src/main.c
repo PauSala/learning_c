@@ -97,7 +97,6 @@ int main(void)
     socklen_t addrlen;
     char remoteIP[INET6_ADDRSTRLEN];
 
-    // Create kqueue
     int kq = kqueue();
     if (kq == -1)
     {
@@ -105,7 +104,6 @@ int main(void)
         exit(1);
     }
 
-    // Get a listening socket
     listener = get_listener_socket();
     if (listener == -1)
     {
@@ -122,7 +120,6 @@ int main(void)
 
     struct kevent events[MAX_EVENTS];
 
-    // Main event loop
     for (;;)
     {
         int nev = kevent(kq, NULL, 0, events, MAX_EVENTS, NULL);

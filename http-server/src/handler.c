@@ -78,6 +78,8 @@ void add_event(int kq, int fd, int filter, int flags)
 void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
 {
 
+    HttpParser *parser = (HttpParser *)event->udata;
+
     size_t req_len = event->data > 0 ? event->data : 1;
     char *buf = malloc(req_len + 1);
     if (!buf)
@@ -94,6 +96,10 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
     {
         perror("read");
         close(fd);
+        if (parser)
+        {
+            free_parser(parser);
+        }
         return;
     }
 
@@ -101,12 +107,14 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
     {
         logger("Connection closed by peer: %s", DEBUG, client_ip);
         close(fd);
+        if (parser)
+        {
+            free_parser(parser);
+        }
         return;
     }
 
     buf[nbytes] = '\0';
-
-    HttpParser *parser = (HttpParser *)event->udata;
 
     if (!parser)
     {

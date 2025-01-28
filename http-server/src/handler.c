@@ -129,7 +129,8 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
 
     parse_request(parser);
 
-    printf("Parser state: %s\nData Read: %zu\nBody len: %zu\n",
+    logger("Parser state: %s\nData Read: %zu\nBody len: %zu\n",
+           DEBUG,
            parser_state_to_string(parser->state),
            parser->input_len,
            parser->request->body.len);
@@ -182,8 +183,8 @@ void handle_response(int fd, const char *client_ip)
         return;
     }
 
-    ResultChar response = html_response("hello.html");
-    // ResultChar response = html_response("hello_large.html");
+    // ResultChar response = html_response("hello.html");
+    ResultChar response = html_response("hello_large.html");
     if (response.ty == Err)
     {
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");

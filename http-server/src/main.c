@@ -175,7 +175,7 @@ int main(void)
             else if (events[i].filter == EVFILT_WRITE)
             {
                 logger("EVFILT_WRITE socket: %d", DEBUG, fd);
-                handle_response(fd,
+                handle_response(&events[i], fd, kq,
                                 inet_ntop(remoteaddr.ss_family,
                                           get_in_addr((struct sockaddr *)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
             }

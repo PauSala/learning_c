@@ -661,7 +661,6 @@ int parse_body(HttpParser *parser, char *req)
 
     if ((long)parser->request->body.len < content_length)
     {
-        printf("%zu < %ld\n", parser->request->body.len, content_length);
         parser->state = BODY;
         parser->eof = true;
     }

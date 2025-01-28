@@ -23,47 +23,6 @@
 // Hash size
 #define HASH_SIZE 1024
 
-// Hash table for connections
-PendingResponse *connection_table[HASH_SIZE] = {NULL};
-
-int hash_fd(int fd)
-{
-    return fd % HASH_SIZE;
-}
-
-void insert_new_connection(int fd, char *data, char *start)
-{
-    int index = hash_fd(fd);
-    PendingResponse *new_response = malloc(sizeof(PendingResponse));
-    if (!new_response)
-    {
-        perror("malloc on insert_new_connection");
-        exit(1);
-    }
-
-    new_response->fd = fd;
-    new_response->data = data;
-    new_response->start = start;
-    new_response->active = 1;
-    new_response->next = connection_table[index];
-    connection_table[index] = new_response;
-}
-
-PendingResponse *find_connection(int fd)
-{
-    int index = hash_fd(fd);
-    PendingResponse *curr = connection_table[index];
-    while (curr)
-    {
-        if (curr->fd == fd)
-        {
-            return curr;
-        }
-        curr = curr->next;
-    }
-    return NULL;
-}
-
 void add_event(int kq, int fd, int filter, int flags)
 {
     struct kevent ev;
@@ -147,42 +106,8 @@ void handle_request(struct kevent *event, int fd, int kq, const char *client_ip)
     kevent(kq, event, 1, NULL, 0, NULL);
 }
 
-void handle_response(int fd, const char *client_ip)
+void handle_response(struct kevent *event, int fd, int kq, const char *client_ip)
 {
-    ssize_t bytes_sent;
-
-    // Is there already a connection waiting for more data to be read?
-    PendingResponse *old = find_connection(fd);
-    if (old != NULL && old->active)
-    {
-        logger("Reading %d bytes of pending data.", DEBUG, strlen(old->data));
-
-        bytes_sent = send(fd, old->data, strlen(old->data), 0);
-        if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-        {
-            perror("write");
-            close(fd);
-            return;
-        }
-        if (bytes_sent == 0)
-        {
-            logger("Write: Connection closed by peer.", DEBUG);
-            close(fd);
-            return;
-        }
-        if (bytes_sent < (int)strlen(old->data))
-        {
-            old->data = old->data + bytes_sent;
-            return;
-        }
-        logger("All pending data has been sent!", DEBUG);
-        old->active = 0;
-        old->data = NULL;
-        old->start = NULL;
-        shutdown(fd, SHUT_WR);
-        return;
-    }
-
     // ResultChar response = html_response("hello.html");
     ResultChar response = html_response("hello_large.html");
     if (response.ty == Err)
@@ -190,9 +115,25 @@ void handle_response(int fd, const char *client_ip)
         logger("%s %s", ERROR, e_to_string(&response.val.err), "Error getting html_response.");
         send(fd, ERR_500, strlen(ERR_500), 0);
         close(fd);
+        return;
     }
 
-    bytes_sent = send(fd, response.val.res, strlen(response.val.res), 0);
+    PartialWrite *pw = (PartialWrite *)event->udata;
+    ssize_t bytes_sent;
+    char *data;
+
+    if (pw)
+    {
+        logger("Some data is pending to write", DEBUG);
+        data = response.val.res + pw->bytes_sent;
+    }
+    else
+    {
+        data = response.val.res;
+    }
+
+    bytes_sent = send(fd, data, strlen(data), 0);
+
     if (bytes_sent == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
     {
         perror("write");
@@ -205,23 +146,27 @@ void handle_response(int fd, const char *client_ip)
         close(fd);
         return;
     }
-    if (bytes_sent < (int)strlen(response.val.res))
+    if (bytes_sent < (int)strlen(data))
     {
-        logger("Data does not fit in response: %d, bytes_sent: %d", DEBUG, strlen(response.val.res), bytes_sent);
-        if (old)
+        if (!pw)
         {
-            logger("And old item exists and will be used", DEBUG);
-            old->start = response.val.res;
-            old->data = response.val.res + bytes_sent;
-            old->active = 1;
-            old->fd = fd;
+            pw = malloc(sizeof(PartialWrite));
+            if (!pw)
+            {
+                perror("malloc partial write");
+                exit(1);
+            }
+            pw->bytes_sent = 0;
         }
-        else
-        {
-            logger("insert_new_connection", DEBUG);
-            insert_new_connection(fd, response.val.res + bytes_sent, response.val.res);
-        }
+        pw->bytes_sent += bytes_sent;
+        event->udata = pw;
+        kevent(kq, event, 1, NULL, 0, NULL);
         return;
+    }
+
+    if (pw)
+    {
+        free(pw);
     }
     logger("Closing connection after write from %s", DEBUG, client_ip);
 

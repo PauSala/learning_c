@@ -246,14 +246,13 @@ void qtnode_draw(QTNode *node)
         return;
     }
 
-    // Draw the current node's rectangle
-    DrawRectangleLines(node->rect.x, node->rect.y, node->rect.width, node->rect.height, DARKPURPLE);
-
     // Recursively draw the child nodes
     qtnode_draw(node->tl);
     qtnode_draw(node->tr);
     qtnode_draw(node->br);
     qtnode_draw(node->bl);
+    // Draw the current node's rectangle
+    DrawRectangleLinesEx(node->rect, 0.2, LIGHTGRAY);
 }
 
 #endif // DS_H 

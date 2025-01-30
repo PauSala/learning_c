@@ -3,11 +3,11 @@
 
 #include "raylib.h"
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 450
+#define SCREEN_WIDTH 1200
+#define SCREEN_HEIGHT 900
 
-#define SCREEN_WIDTHF 800.0f
-#define SCREEN_HEIGHTF 450.0f
+#define SCREEN_WIDTHF 1200.0f
+#define SCREEN_HEIGHTF 900.0f
 
 #define VECTOR2(x, y) ((Vector2){(x), (y)})
 
@@ -43,7 +43,7 @@ typedef struct
     ObjectType type;
     Vector2 center;
     Vector2 direction;
-    float velocity;
+    Vector2 velocity;
     float radius;
     float range;
     int cicles;
@@ -58,7 +58,7 @@ typedef struct
     const Vector2 directionChange;
 } CollisionLine;
 
-Unit *unit_create(Vector2 center, Vector2 direction);
+Unit *unit_create(Vector2 center, Vector2 direction, Vector2 velocity);
 void unit_update(Unit *unit);
 
 void unit_window_collision(Unit *unit)
@@ -80,11 +80,11 @@ void unit_window_collision(Unit *unit)
         unit->direction.x = 1.0;
     }
 
-    unit->center.x = unit->center.x + (unit->velocity * unit->direction.x);
-    unit->center.y = unit->center.y + (unit->velocity * unit->direction.y);
+    unit->center.x = unit->center.x + (unit->velocity.x * unit->direction.x);
+    unit->center.y = unit->center.y + (unit->velocity.y * unit->direction.y);
 }
 
-Unit *unit_create(Vector2 center, Vector2 direction)
+Unit *unit_create(Vector2 center, Vector2 direction, Vector2 velocity)
 {
     Unit *unit = malloc(sizeof(Unit));
     if (!unit)
@@ -96,9 +96,9 @@ Unit *unit_create(Vector2 center, Vector2 direction)
     unit->direction = direction;
     unit->in_col = MAGENTA;
     unit->out_col = WHITE;
-    unit->radius = 5.0;
+    unit->radius = 1.0;
     unit->range = 1.1;
-    unit->velocity = 0.5;
+    unit->velocity = velocity;
     unit->type = UNIT;
     return unit;
 }

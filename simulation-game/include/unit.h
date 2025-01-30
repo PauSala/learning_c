@@ -3,10 +3,10 @@
 
 #include "raylib.h"
 
-#define SCREEN_WIDTH 1200
+#define SCREEN_WIDTH 900
 #define SCREEN_HEIGHT 900
 
-#define SCREEN_WIDTHF 1200.0f
+#define SCREEN_WIDTHF 900.0f
 #define SCREEN_HEIGHTF 900.0f
 
 #define VECTOR2(x, y) ((Vector2){(x), (y)})

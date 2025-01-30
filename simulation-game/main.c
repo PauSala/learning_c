@@ -7,7 +7,7 @@
 #include "include/unit.h"
 #include "include/ds.h"
 
-#define MAX_PARTICLES 1000
+#define MAX_PARTICLES 10000
 void initialize_units(DynamicArray *da, int num);
 
 //------------------------------------------------------------------------------------

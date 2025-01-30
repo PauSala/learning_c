@@ -94,9 +94,9 @@ Unit *unit_create(Vector2 center, Vector2 direction, Vector2 velocity)
     unit->center = center;
     unit->cicles = 10;
     unit->direction = direction;
-    unit->in_col = MAGENTA;
-    unit->out_col = WHITE;
-    unit->radius = 1.0;
+    unit->in_col = LIME;
+    unit->out_col = (Color){28, 28, 28, 255};
+    unit->radius = 4.0;
     unit->range = 1.1;
     unit->velocity = velocity;
     unit->type = UNIT;

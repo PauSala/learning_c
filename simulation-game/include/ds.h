@@ -1,9 +1,11 @@
 #ifndef DS_H
 #define DS_H
 
+#include "raymath.h"
+#include "raylib.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "raylib.h"
 #include "stdio.h"
 #include "stdlib.h"
 
@@ -78,7 +80,7 @@ void dynamic_array_remove(DynamicArray *array, size_t index)
 typedef struct QTNode
 {
     Rectangle rect;
-    void *objects[4];
+    void *objects[MAX_QT_CAPACITY];
     struct QTNode *tl;
     struct QTNode *tr;
     struct QTNode *br;
@@ -192,19 +194,19 @@ void qtnode_insert(QTNode *node, void *element)
 
 void qtnode_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e)
 {
-    if (CheckCollisionPointRec(e->center, tl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius, tl->rect))
     {
         qtnode_insert(tl, e);
     }
-    if (CheckCollisionPointRec(e->center, tr->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius, tr->rect))
     {
         qtnode_insert(tr, e);
     }
-    if (CheckCollisionPointRec(e->center, br->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius, br->rect))
     {
         qtnode_insert(br, e);
     }
-    if (CheckCollisionPointRec(e->center, bl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius, bl->rect))
     {
         qtnode_insert(bl, e);
     }
@@ -253,6 +255,57 @@ void qtnode_draw(QTNode *node)
     qtnode_draw(node->bl);
     // Draw the current node's rectangle
     DrawRectangleLinesEx(node->rect, 0.2, LIGHTGRAY);
+}
+
+void qtnode_handle_collisions(QTNode *node)
+{
+    if (!node->is_leaf)
+    {
+        qtnode_handle_collisions(node->tl);
+        qtnode_handle_collisions(node->tr);
+        qtnode_handle_collisions(node->br);
+        qtnode_handle_collisions(node->bl);
+        return;
+    }
+    for (int i = 0; i < node->count - 1; i++)
+    {
+        Unit *a = (Unit *)node->objects[i];
+        for (int j = i + 1; j < node->count; j++)
+        {
+            Unit *b = (Unit *)node->objects[j];
+            if (CheckCollisionCircles(a->center, a->radius, b->center, b->radius))
+            {
+                float tmp = a->direction.x;
+                a->direction.x = b->direction.x;
+                b->direction.x = tmp;
+
+                tmp = a->direction.y;
+                a->direction.y = b->direction.y;
+                b->direction.y = tmp;
+
+                tmp = a->velocity.x;
+                a->velocity.x = b->velocity.x;
+                b->velocity.x = tmp;
+
+                tmp = a->velocity.y;
+                a->velocity.y = b->velocity.y;
+                b->velocity.y = tmp;
+
+                // Avoid particles getting stuck together
+                // Calculate overlap
+                Vector2 delta = Vector2Subtract(b->center, a->center);
+                float distance = Vector2Length(delta);
+                float overlap = (a->radius + b->radius) - distance;
+
+                // Normalize delta
+                Vector2 normal = Vector2Scale(delta, 1.0f / distance);
+
+                // Adjust positions to move particles apart
+                a->center = Vector2Subtract(a->center, Vector2Scale(normal, overlap / 2.0f));
+                b->center = Vector2Add(b->center, Vector2Scale(normal, overlap / 2.0f));
+            }
+        }
+    }
 }
 
 #endif // DS_H 

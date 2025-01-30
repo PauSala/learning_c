@@ -7,7 +7,7 @@
 #include "include/unit.h"
 #include "include/ds.h"
 
-#define MAX_PARTICLES 10000
+#define MAX_PARTICLES 1000
 void initialize_units(DynamicArray *da, int num);
 
 //------------------------------------------------------------------------------------
@@ -57,6 +57,7 @@ int main(void)
                 i++;
             }
         }
+        qtnode_handle_collisions(root);
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -64,6 +65,7 @@ int main(void)
         BeginDrawing();
 
         ClearBackground((Color){28, 28, 28, 255});
+        qtnode_draw(root);
 
         // DrawText("Congrats! You created your first window!", 190, 0, 10, LIGHTGRAY);
         // DrawCircleGradient((int)unit1->center.x, (int)unit1->center.y, unit1->radius, unit1->in_col, unit1->out_col);
@@ -93,7 +95,6 @@ int main(void)
                 i++;
             }
         }
-        qtnode_draw(root);
         EndDrawing();
         //----------------------------------------------------------------------------------
 

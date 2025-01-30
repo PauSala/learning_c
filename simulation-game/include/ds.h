@@ -3,6 +3,11 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "raylib.h"
+#include "stdio.h"
+#include "stdlib.h"
+
+#include "unit.h"
 
 // Dynamic array
 
@@ -21,13 +26,13 @@ void dynamic_array_remove(DynamicArray *array, size_t index);
 
 DynamicArray *create_dynamic_array(size_t initial_capacity)
 {
-    DynamicArray *array = malloc(sizeof(DynamicArray));
+    DynamicArray *array = (DynamicArray *)malloc(sizeof(DynamicArray));
     if (!array)
     {
         perror("malloc -> create_dynamic_array");
         exit(1);
     }
-    array->data = malloc(initial_capacity * sizeof(void *));
+    array->data = (void **)malloc(initial_capacity * sizeof(void *));
     if (!array->data)
     {
         perror("malloc -> create_dynamic_array");
@@ -49,7 +54,7 @@ void dynamic_array_add(DynamicArray *array, void *element)
     if (array->size == array->capacity)
     {
         array->capacity *= 2;
-        array->data = realloc(array->data, array->capacity * sizeof(void *));
+        array->data = (void **)realloc(array->data, array->capacity * sizeof(void *));
         if (!array->data)
         {
             perror("malloc -> create_dynamic_array");
@@ -83,8 +88,11 @@ typedef struct QTNode
 
 } QTNode;
 
-void qtnode_insert(QTNode *node, void *element, Vector2 center);
+void qtnode_insert(QTNode *node, void *element);
 QTNode create_qtnode(Rectangle rect);
+void qtnode_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e);
+void qtnode_free(QTNode *node);
+void qtnode_draw(QTNode *node);
 
 QTNode create_qtnode(Rectangle rect)
 {
@@ -102,7 +110,7 @@ QTNode create_qtnode(Rectangle rect)
 
 QTNode *create_qtnode_ptr(Rectangle rect)
 {
-    QTNode *node = malloc(sizeof(QTNode));
+    QTNode *node = (QTNode *)malloc(sizeof(QTNode));
     if (!node)
     {
         perror("Allocation failed for QTNode");
@@ -118,15 +126,18 @@ QTNode *create_qtnode_ptr(Rectangle rect)
     return node;
 }
 
-void qtnode_insert(QTNode *node, void *element, Vector2 center)
+void qtnode_insert(QTNode *node, void *element)
 {
-    // TODO: add deep bound just in case;
+    Unit *e = (Unit *)element;
+
+    if (!node->is_leaf)
+    {
+        qtnode_if_inside_insert(node->tl, node->tr, node->br, node->bl, e);
+        return;
+    }
+
     if (node->count == MAX_QT_CAPACITY)
     {
-
-        // TODO: partition and reassign;
-        printf("Node is full!\n");
-
         Rectangle tlr = (Rectangle){
             .x = node->rect.x,
             .y = node->rect.y,
@@ -156,33 +167,47 @@ void qtnode_insert(QTNode *node, void *element, Vector2 center)
         QTNode *br = create_qtnode_ptr(brr);
         QTNode *bl = create_qtnode_ptr(bll);
 
-        for (int i = 0; i < 4; i++)
+        node->tl = tl;
+        node->tr = tr;
+        node->br = br;
+        node->bl = bl;
+
+        for (int i = 0; i < MAX_QT_CAPACITY; i++)
         {
-            Unit *e = node->objects[i];
-            if (CheckCollisionPointRec(e->center, tl->rect))
-            {
-                qtnode_insert(tl, e, e->center);
-            }
-            if (CheckCollisionPointRec(e->center, tr->rect))
-            {
-                qtnode_insert(tr, e, e->center);
-            }
-            if (CheckCollisionPointRec(e->center, br->rect))
-            {
-                qtnode_insert(br, e, e->center);
-            }
-            if (CheckCollisionPointRec(e->center, br->rect))
-            {
-                qtnode_insert(bl, e, e->center);
-            }
+            Unit *existing_element = (Unit *)node->objects[i];
+            qtnode_if_inside_insert(tl, tr, br, bl, existing_element);
             node->objects[i] = NULL;
         }
+
+        qtnode_if_inside_insert(tl, tr, br, bl, e);
+
         node->is_leaf = false;
         node->count = 0;
         return;
     }
 
+    // Insert the element into the current node
     node->objects[node->count++] = element;
+}
+
+void qtnode_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e)
+{
+    if (CheckCollisionPointRec(e->center, tl->rect))
+    {
+        qtnode_insert(tl, e);
+    }
+    if (CheckCollisionPointRec(e->center, tr->rect))
+    {
+        qtnode_insert(tr, e);
+    }
+    if (CheckCollisionPointRec(e->center, br->rect))
+    {
+        qtnode_insert(br, e);
+    }
+    if (CheckCollisionPointRec(e->center, bl->rect))
+    {
+        qtnode_insert(bl, e);
+    }
 }
 
 void qtnode_free(QTNode *node)
@@ -195,16 +220,40 @@ void qtnode_free(QTNode *node)
     if (!node->is_leaf)
     {
         if (node->tl != NULL)
+        {
             qtnode_free(node->tl);
+        }
         if (node->tr != NULL)
+        {
             qtnode_free(node->tr);
+        }
         if (node->br != NULL)
+        {
             qtnode_free(node->br);
+        }
         if (node->bl != NULL)
+        {
             qtnode_free(node->bl);
+        }
+    }
+    free(node);
+}
+
+void qtnode_draw(QTNode *node)
+{
+    if (node == NULL)
+    {
+        return;
     }
 
-    free(node);
+    // Draw the current node's rectangle
+    DrawRectangleLines(node->rect.x, node->rect.y, node->rect.width, node->rect.height, DARKPURPLE);
+
+    // Recursively draw the child nodes
+    qtnode_draw(node->tl);
+    qtnode_draw(node->tr);
+    qtnode_draw(node->br);
+    qtnode_draw(node->bl);
 }
 
 #endif // DS_H 

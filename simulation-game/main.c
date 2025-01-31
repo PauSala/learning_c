@@ -7,7 +7,7 @@
 #include "include/unit.h"
 #include "include/ds.h"
 
-#define MAX_PARTICLES 500
+#define MAX_PARTICLES 1000
 void initialize_units(DynamicArray *da, int num);
 
 //------------------------------------------------------------------------------------
@@ -35,6 +35,7 @@ int main(void)
         QTNode *root = create_qtnode_ptr((Rectangle){.x = 0.0, .y = 0.0, .width = SCREEN_WIDTHF, .height = SCREEN_HEIGHTF});
 
         size_t i = 0;
+        int level = 0;
         while (i < da->size)
         {
             ObjectType *type = da->data[i];
@@ -42,7 +43,7 @@ int main(void)
             {
             case UNIT:
                 unit_update((Unit *)da->data[i]);
-                qtnode_insert(root, (Unit *)da->data[i]);
+                qt_insert(root, (Unit *)da->data[i], level);
                 break;
             case FOOD:
                 break;
@@ -57,7 +58,6 @@ int main(void)
                 i++;
             }
         }
-        qtnode_handle_collisions(root);
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -65,7 +65,8 @@ int main(void)
         BeginDrawing();
 
         ClearBackground((Color){28, 28, 28, 255});
-        qtnode_draw(root);
+        // qt_draw(root);
+        qt_draw_relations(root);
 
         // DrawText("Congrats! You created your first window!", 190, 0, 10, LIGHTGRAY);
         // DrawCircleGradient((int)unit1->center.x, (int)unit1->center.y, unit1->radius, unit1->in_col, unit1->out_col);
@@ -78,7 +79,7 @@ int main(void)
             case UNIT:
             {
                 Unit *unit = da->data[i];
-                DrawCircleGradient((int)unit->center.x, (int)unit->center.y, unit->radius, unit->in_col, unit->out_col);
+                // DrawCircleGradient((int)unit->center.x, (int)unit->center.y, unit->radius, unit->in_col, unit->out_col);
                 break;
             }
             case FOOD:
@@ -99,7 +100,7 @@ int main(void)
         //----------------------------------------------------------------------------------
 
         // Reset
-        qtnode_free(root);
+        qt_free(root);
     }
 
     // De-Initialization
@@ -114,10 +115,10 @@ void initialize_units(DynamicArray *da, int num)
 {
     for (int i = 0; i < num; i++)
     {
-        float x = (float)GetRandomValue(0, (int)SCREEN_WIDTHF / 2);
-        float y = (float)GetRandomValue(0, (int)SCREEN_HEIGHTF / 2);
-        float vx = (float)GetRandomValue(50, 300) / 100.0f;
-        float vy = (float)GetRandomValue(50, 300) / 100.0f;
+        float x = (float)GetRandomValue(0, (int)SCREEN_WIDTHF);
+        float y = (float)GetRandomValue(0, (int)SCREEN_HEIGHTF);
+        float vx = (float)GetRandomValue(0, 50) / 100.0f;
+        float vy = (float)GetRandomValue(0, 50) / 100.0f;
 
         Unit *unit = unit_create((Vector2){x, y}, (Vector2){1.0f, 1.0f}, (Vector2){vx, vy});
         dynamic_array_add(da, unit);

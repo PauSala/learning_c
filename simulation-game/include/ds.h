@@ -76,11 +76,13 @@ void dynamic_array_remove(DynamicArray *array, size_t index)
 }
 
 // QuadTree
-#define MAX_QT_CAPACITY 4
+#define MAX_QT_CAPACITY 5
+#define MAX_QT_CAPACITY_DEEP_HIT 10
+#define MAX_DEEP_LEVEL 20
 typedef struct QTNode
 {
     Rectangle rect;
-    void *objects[MAX_QT_CAPACITY];
+    void *objects[MAX_QT_CAPACITY_DEEP_HIT];
     struct QTNode *tl;
     struct QTNode *tr;
     struct QTNode *br;
@@ -90,11 +92,13 @@ typedef struct QTNode
 
 } QTNode;
 
-void qtnode_insert(QTNode *node, void *element);
+void qt_insert(QTNode *node, void *element, int level);
 QTNode create_qtnode(Rectangle rect);
-void qtnode_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e);
-void qtnode_free(QTNode *node);
-void qtnode_draw(QTNode *node);
+QTNode *create_qtnode_ptr(Rectangle rect);
+void qt_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e, int level);
+void qt_free(QTNode *node);
+void qt_draw(QTNode *node);
+void qt_draw_relations(QTNode *node);
 
 QTNode create_qtnode(Rectangle rect)
 {
@@ -128,17 +132,17 @@ QTNode *create_qtnode_ptr(Rectangle rect)
     return node;
 }
 
-void qtnode_insert(QTNode *node, void *element)
+void qt_insert(QTNode *node, void *element, int level)
 {
     Unit *e = (Unit *)element;
 
     if (!node->is_leaf)
     {
-        qtnode_if_inside_insert(node->tl, node->tr, node->br, node->bl, e);
+        qt_if_inside_insert(node->tl, node->tr, node->br, node->bl, e, level + 1);
         return;
     }
 
-    if (node->count == MAX_QT_CAPACITY)
+    if (node->count == MAX_QT_CAPACITY && level < MAX_DEEP_LEVEL)
     {
         Rectangle tlr = (Rectangle){
             .x = node->rect.x,
@@ -177,42 +181,50 @@ void qtnode_insert(QTNode *node, void *element)
         for (int i = 0; i < MAX_QT_CAPACITY; i++)
         {
             Unit *existing_element = (Unit *)node->objects[i];
-            qtnode_if_inside_insert(tl, tr, br, bl, existing_element);
+            qt_if_inside_insert(tl, tr, br, bl, existing_element, level + 1);
             node->objects[i] = NULL;
         }
 
-        qtnode_if_inside_insert(tl, tr, br, bl, e);
+        qt_if_inside_insert(tl, tr, br, bl, e, level + 1);
 
         node->is_leaf = false;
         node->count = 0;
-        return;
     }
-
-    // Insert the element into the current node
-    node->objects[node->count++] = element;
+    if (level < MAX_DEEP_LEVEL && node->count < MAX_QT_CAPACITY)
+    {
+        node->objects[node->count++] = element;
+    }
+    if (level >= MAX_DEEP_LEVEL && node->count < MAX_QT_CAPACITY_DEEP_HIT)
+    {
+        node->objects[node->count++] = element;
+    }
+    if (level >= MAX_DEEP_LEVEL && node->count >= MAX_QT_CAPACITY_DEEP_HIT)
+    {
+        printf("Maz level hit, max size hit!\n");
+    }
 }
 
-void qtnode_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e)
+void qt_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e, int level)
 {
-    if (CheckCollisionCircleRec(e->center, e->radius, tl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, tl->rect))
     {
-        qtnode_insert(tl, e);
+        qt_insert(tl, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius, tr->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, tr->rect))
     {
-        qtnode_insert(tr, e);
+        qt_insert(tr, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius, br->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, br->rect))
     {
-        qtnode_insert(br, e);
+        qt_insert(br, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius, bl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, bl->rect))
     {
-        qtnode_insert(bl, e);
+        qt_insert(bl, e, level + 1);
     }
 }
 
-void qtnode_free(QTNode *node)
+void qt_free(QTNode *node)
 {
     if (node == NULL)
     {
@@ -223,25 +235,25 @@ void qtnode_free(QTNode *node)
     {
         if (node->tl != NULL)
         {
-            qtnode_free(node->tl);
+            qt_free(node->tl);
         }
         if (node->tr != NULL)
         {
-            qtnode_free(node->tr);
+            qt_free(node->tr);
         }
         if (node->br != NULL)
         {
-            qtnode_free(node->br);
+            qt_free(node->br);
         }
         if (node->bl != NULL)
         {
-            qtnode_free(node->bl);
+            qt_free(node->bl);
         }
     }
     free(node);
 }
 
-void qtnode_draw(QTNode *node)
+void qt_draw(QTNode *node)
 {
     if (node == NULL)
     {
@@ -249,10 +261,10 @@ void qtnode_draw(QTNode *node)
     }
 
     // Recursively draw the child nodes
-    qtnode_draw(node->tl);
-    qtnode_draw(node->tr);
-    qtnode_draw(node->br);
-    qtnode_draw(node->bl);
+    qt_draw(node->tl);
+    qt_draw(node->tr);
+    qt_draw(node->br);
+    qt_draw(node->bl);
     // Draw the current node's rectangle
     DrawRectangleLinesEx(node->rect, 0.2, LIGHTGRAY);
 }
@@ -300,6 +312,27 @@ void qtnode_handle_collisions(QTNode *node)
                 a->center = Vector2Subtract(a->center, Vector2Scale(normal, overlap / 2.0f));
                 b->center = Vector2Add(b->center, Vector2Scale(normal, overlap / 2.0f));
             }
+        }
+    }
+}
+
+void qt_draw_relations(QTNode *node)
+{
+    if (!node->is_leaf)
+    {
+        qt_draw_relations(node->tl);
+        qt_draw_relations(node->tr);
+        qt_draw_relations(node->br);
+        qt_draw_relations(node->bl);
+        return;
+    }
+    for (int i = 0; i < node->count - 1; i++)
+    {
+        Unit *a = (Unit *)node->objects[i];
+        for (int j = i + 1; j < node->count; j++)
+        {
+            Unit *b = (Unit *)node->objects[j];
+            DrawLine(a->center.x, a->center.y, b->center.x, b->center.y, YELLOW);
         }
     }
 }

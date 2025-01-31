@@ -292,15 +292,11 @@ void qtnode_handle_collisions(QTNode *node)
                 b->velocity.y = tmp;
 
                 // Avoid particles getting stuck together
-                // Calculate overlap
                 Vector2 delta = Vector2Subtract(b->center, a->center);
                 float distance = Vector2Length(delta);
                 float overlap = (a->radius + b->radius) - distance;
 
-                // Normalize delta
                 Vector2 normal = Vector2Scale(delta, 1.0f / distance);
-
-                // Adjust positions to move particles apart
                 a->center = Vector2Subtract(a->center, Vector2Scale(normal, overlap / 2.0f));
                 b->center = Vector2Add(b->center, Vector2Scale(normal, overlap / 2.0f));
             }

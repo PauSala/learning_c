@@ -7,7 +7,7 @@
 #include "include/unit.h"
 #include "include/ds.h"
 
-#define MAX_PARTICLES 1000
+#define MAX_PARTICLES 500
 void initialize_units(DynamicArray *da, int num);
 
 //------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ int main(void)
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
-    DynamicArray *da = create_dynamic_array(MAX_PARTICLES);
+    DynamicArray *da = create_dynamic_array(MAX_PARTICLES + 1);
     initialize_units(da, MAX_PARTICLES);
 
     // Main game loop

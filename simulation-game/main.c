@@ -66,10 +66,7 @@ int main(void)
 
         ClearBackground((Color){28, 28, 28, 255});
         // qt_draw(root);
-        qt_draw_relations(root);
 
-        // DrawText("Congrats! You created your first window!", 190, 0, 10, LIGHTGRAY);
-        // DrawCircleGradient((int)unit1->center.x, (int)unit1->center.y, unit1->radius, unit1->in_col, unit1->out_col);
         i = 0;
         while (i < da->size)
         {
@@ -79,7 +76,7 @@ int main(void)
             case UNIT:
             {
                 Unit *unit = da->data[i];
-                // DrawCircleGradient((int)unit->center.x, (int)unit->center.y, unit->radius, unit->in_col, unit->out_col);
+                unit_draw(unit);
                 break;
             }
             case FOOD:
@@ -96,6 +93,7 @@ int main(void)
                 i++;
             }
         }
+        qt_draw_relations(root);
         EndDrawing();
         //----------------------------------------------------------------------------------
 
@@ -117,10 +115,11 @@ void initialize_units(DynamicArray *da, int num)
     {
         float x = (float)GetRandomValue(0, (int)SCREEN_WIDTHF);
         float y = (float)GetRandomValue(0, (int)SCREEN_HEIGHTF);
-        float vx = (float)GetRandomValue(0, 50) / 100.0f;
-        float vy = (float)GetRandomValue(0, 50) / 100.0f;
+        float vx = (float)GetRandomValue(0, 100) / 100.0f;
+        float vy = (float)GetRandomValue(0, 100) / 100.0f;
+        int age = GetRandomValue(0, 500);
 
-        Unit *unit = unit_create((Vector2){x, y}, (Vector2){1.0f, 1.0f}, (Vector2){vx, vy});
+        Unit *unit = unit_create((Vector2){x, y}, (Vector2){1.0f, 1.0f}, (Vector2){vx, vy}, age);
         dynamic_array_add(da, unit);
     }
 }

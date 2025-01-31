@@ -77,7 +77,7 @@ void dynamic_array_remove(DynamicArray *array, size_t index)
 
 // QuadTree
 #define MAX_QT_CAPACITY 5
-#define MAX_QT_CAPACITY_DEEP_HIT 10
+#define MAX_QT_CAPACITY_DEEP_HIT 20
 #define MAX_DEEP_LEVEL 20
 typedef struct QTNode
 {
@@ -200,25 +200,25 @@ void qt_insert(QTNode *node, void *element, int level)
     }
     if (level >= MAX_DEEP_LEVEL && node->count >= MAX_QT_CAPACITY_DEEP_HIT)
     {
-        printf("Maz level hit, max size hit!\n");
+        printf("Max level hit, max size hit!\n");
     }
 }
 
 void qt_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e, int level)
 {
-    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, tl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + e->range, tl->rect))
     {
         qt_insert(tl, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, tr->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + e->range, tr->rect))
     {
         qt_insert(tr, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, br->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + e->range, br->rect))
     {
         qt_insert(br, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + 4.2, bl->rect))
+    if (CheckCollisionCircleRec(e->center, e->radius + e->range, bl->rect))
     {
         qt_insert(bl, e, level + 1);
     }
@@ -260,12 +260,11 @@ void qt_draw(QTNode *node)
         return;
     }
 
-    // Recursively draw the child nodes
     qt_draw(node->tl);
     qt_draw(node->tr);
     qt_draw(node->br);
     qt_draw(node->bl);
-    // Draw the current node's rectangle
+
     DrawRectangleLinesEx(node->rect, 0.2, LIGHTGRAY);
 }
 
@@ -326,13 +325,19 @@ void qt_draw_relations(QTNode *node)
         qt_draw_relations(node->bl);
         return;
     }
+
     for (int i = 0; i < node->count - 1; i++)
     {
         Unit *a = (Unit *)node->objects[i];
         for (int j = i + 1; j < node->count; j++)
         {
             Unit *b = (Unit *)node->objects[j];
-            DrawLine(a->center.x, a->center.y, b->center.x, b->center.y, YELLOW);
+            char r = (a->in_col.r + b->in_col.r) / 2;
+            char g = (a->in_col.g + b->in_col.g) / 2;
+            char bl = (a->in_col.b + b->in_col.b) / 2;
+
+            Color col = (Color){.r = r, .g = g, .b = bl, .a = 100};
+            DrawLineEx(a->center, b->center, 0.5, col);
         }
     }
 }

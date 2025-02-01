@@ -39,7 +39,7 @@ int main(void)
     int menu_height = 40;
     int button_width = 100;
 
-    int start = (SCREEN_WIDTH - (num_buttons * button_width - (num_buttons - 1) * margin)) / 2;
+    int start = (SCREEN_WIDTH - ((num_buttons * button_width) + ((num_buttons - 1) * margin))) / 2;
 
     Rectangle menu = (Rectangle){0, 0, SCREEN_WIDTH, 40};
     Button qt_btn = (Button){

@@ -20,6 +20,7 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
     SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "QuadTree");
 
     SetTargetFPS(40); // Set our game to run at 60 frames-per-second
@@ -54,7 +55,7 @@ int main(void)
         .text = "QuadTree"};
 
     Button edges_btn = (Button){
-        .active = false,
+        .active = true,
         .hover = false,
         .x = qt_btn.x + qt_btn.width + margin,
         .y = margin,
@@ -78,7 +79,7 @@ int main(void)
         .text = "Particles"};
 
     Button pause_btn = (Button){
-        .active = true,
+        .active = false,
         .hover = false,
         .x = points_btn.x + points_btn.width + margin,
         .y = margin,

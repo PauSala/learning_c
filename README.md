@@ -7,6 +7,10 @@ A collection of mini-projects to learn C by programming in it.
 A place for playing with network stuff.
 Includes an `http-server` and an `http-parser`.
 
+### [Raylib demo](raylib-demo/README.md)
+
+A simple demo for exploring graphics in C
+
 ### Sudoku solver
 
 A relatively fast sudoku solver.

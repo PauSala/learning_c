@@ -6,7 +6,7 @@
 // Own headers
 #include "include/particle.h"
 #include "include/ds.h"
-#include "ui.h"
+#include "include/ui.h"
 
 #define MAX_PARTICLES 1000
 void initialize_units(DynamicArray *da, int num);
@@ -16,6 +16,18 @@ void initialize_units(DynamicArray *da, int num);
 //------------------------------------------------------------------------------------
 int main(void)
 {
+
+    // Initialization
+    //--------------------------------------------------------------------------------------
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "QuadTree");
+
+    SetTargetFPS(40); // Set our game to run at 60 frames-per-second
+    //--------------------------------------------------------------------------------------
+
+    DynamicArray *da = create_dynamic_array(MAX_PARTICLES);
+    initialize_units(da, MAX_PARTICLES);
+
     // UI: TODO move to a file
     int num_buttons = 4;
     int margin = 5;
@@ -76,20 +88,9 @@ int main(void)
         .active_color = (Color){59, 59, 59, 255},
         .roundness = 0.2,
         .text = "Pause"};
+    // end UI
 
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "QuadTree");
-
-    SetTargetFPS(40); // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
-
-    DynamicArray *da = create_dynamic_array(MAX_PARTICLES);
-    initialize_units(da, MAX_PARTICLES);
-
-// Main game loop
-start:
+    // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update

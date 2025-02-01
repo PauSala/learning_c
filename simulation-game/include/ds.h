@@ -9,7 +9,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-#include "unit.h"
+#include "particle.h"
 
 // Dynamic array
 
@@ -76,7 +76,7 @@ void dynamic_array_remove(DynamicArray *array, size_t index)
 }
 
 // QuadTree
-#define MAX_QT_CAPACITY 5
+#define MAX_QT_CAPACITY 10
 #define MAX_QT_CAPACITY_DEEP_HIT 20
 #define MAX_DEEP_LEVEL 20
 typedef struct QTNode
@@ -206,19 +206,19 @@ void qt_insert(QTNode *node, void *element, int level)
 
 void qt_if_inside_insert(QTNode *tl, QTNode *tr, QTNode *br, QTNode *bl, Unit *e, int level)
 {
-    if (CheckCollisionCircleRec(e->center, e->radius + e->range, tl->rect))
+    if (CheckCollisionCircleRec(e->center, e->range, tl->rect))
     {
         qt_insert(tl, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + e->range, tr->rect))
+    if (CheckCollisionCircleRec(e->center, e->range, tr->rect))
     {
         qt_insert(tr, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + e->range, br->rect))
+    if (CheckCollisionCircleRec(e->center, e->range, br->rect))
     {
         qt_insert(br, e, level + 1);
     }
-    if (CheckCollisionCircleRec(e->center, e->radius + e->range, bl->rect))
+    if (CheckCollisionCircleRec(e->center, e->range, bl->rect))
     {
         qt_insert(bl, e, level + 1);
     }
@@ -265,7 +265,7 @@ void qt_draw(QTNode *node)
     qt_draw(node->br);
     qt_draw(node->bl);
 
-    DrawRectangleLinesEx(node->rect, 0.2, LIGHTGRAY);
+    DrawRectangleLinesEx(node->rect, 0.2, (Color){200, 200, 200, 100});
 }
 
 void qtnode_handle_collisions(QTNode *node)
@@ -336,8 +336,8 @@ void qt_draw_relations(QTNode *node)
             char g = (a->in_col.g + b->in_col.g) / 2;
             char bl = (a->in_col.b + b->in_col.b) / 2;
 
-            Color col = (Color){.r = r, .g = g, .b = bl, .a = 100};
-            DrawLineEx(a->center, b->center, 0.5, col);
+            Color col = (Color){.r = r, .g = g, .b = bl, .a = 50};
+            DrawLineEx(a->center, b->center, 1.0, col);
         }
     }
 }

@@ -4,25 +4,28 @@
 #include "raylib.h"
 #include "raymath.h"
 
-#define SCREEN_WIDTH 900
-#define SCREEN_HEIGHT 900
+#define SCREEN_WIDTH 500
+#define SCREEN_HEIGHT 500
 
-#define SCREEN_WIDTHF 900.0f
-#define SCREEN_HEIGHTF 900.0f
+#define SCREEN_WIDTHF 500.0f
+#define SCREEN_HEIGHTF 500.0f
+
+#define HEADER_MARGIN 41.0f
 
 #define VECTOR2(x, y) ((Vector2){(x), (y)})
 
-static const Vector2 UP_LEFT = VECTOR2(0.0f, 0.0f);
-static const Vector2 UP_RIGTH = VECTOR2(SCREEN_WIDTHF, 0.0f);
+static const Vector2 UP_LEFT = VECTOR2(0.0f, HEADER_MARGIN);
+static const Vector2 UP_RIGTH = VECTOR2(SCREEN_WIDTHF, HEADER_MARGIN);
 static const Vector2 DOWN_LEFT = VECTOR2(0.0f, SCREEN_HEIGHTF);
 static const Vector2 DOWN_RIGTH = VECTOR2(SCREEN_WIDTHF, SCREEN_HEIGHTF);
 
 typedef enum
 {
     UNIT,
-    FOOD,
+    TYPE_B,
 } ObjectType;
 
+#define MAX_AGE 500
 typedef enum
 {
     BORN = 0,
@@ -31,13 +34,6 @@ typedef enum
     ADULT = 300,
     OLD = 400,
 } AgeCycle;
-
-typedef enum
-{
-    M,
-    F,
-    A,
-} Gender;
 
 typedef struct
 {
@@ -99,9 +95,9 @@ Color age_to_color(AgeCycle ac)
     case ADULT:
         return DARKBLUE;
     case TEEN:
-        return SKYBLUE;
+        return ORANGE;
     case YOUNG:
-        return LIGHTGRAY;
+        return YELLOW;
     case BORN:
         return RAYWHITE;
     default:
@@ -127,25 +123,22 @@ void unit_window_collision(Unit *unit)
     {
         unit->direction.x = 1.0;
     }
-
-    unit->center.x = unit->center.x + (unit->velocity.x * unit->direction.x);
-    unit->center.y = unit->center.y + (unit->velocity.y * unit->direction.y);
 }
 
 Unit *unit_create(Vector2 center, Vector2 direction, Vector2 velocity, int age)
 {
-    Unit *unit = malloc(sizeof(Unit));
+    Unit *unit = (Unit *)malloc(sizeof(Unit));
     if (!unit)
     {
         exit(1);
     }
     unit->center = center;
-    unit->age = age;
+    unit->age = 0;
     unit->direction = direction;
     unit->in_col = SKYBLUE;
     unit->out_col = (Color){28, 28, 28, 255};
-    unit->radius = 2.0;
-    unit->range = 1.1;
+    unit->radius = 3.0;
+    unit->range = 10.0;
     unit->velocity = velocity;
     unit->type = UNIT;
     return unit;
@@ -155,13 +148,15 @@ void unit_update(Unit *unit)
 {
     unit_window_collision(unit);
     unit->age += (int)Vector2Length(unit->velocity);
-    unit->age %= 500;
+    unit->age %= MAX_AGE;
     unit->in_col = age_to_color(get_age_cycle(unit->age));
+    unit->center.x = unit->center.x + (unit->velocity.x * unit->direction.x);
+    unit->center.y = unit->center.y + (unit->velocity.y * unit->direction.y);
 }
 
 void unit_draw(Unit *unit)
 {
-    DrawCircleGradient((int)unit->center.x, (int)unit->center.y, unit->radius, unit->in_col, unit->out_col);
+    DrawCircleGradient((int)unit->center.x, (int)unit->center.y, 1.5, (Color){200, 200, 200, 255}, unit->out_col);
 }
 
 #endif

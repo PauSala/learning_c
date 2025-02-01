@@ -48,13 +48,6 @@ typedef struct
     Color out_col;
 } Unit;
 
-typedef struct
-{
-    const Vector2 start;
-    const Vector2 end;
-    const Vector2 directionChange;
-} CollisionLine;
-
 // Declarations
 Unit *unit_create(Vector2 center, Vector2 direction, Vector2 velocity, int age);
 void unit_update(Unit *unit);

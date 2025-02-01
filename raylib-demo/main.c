@@ -9,7 +9,7 @@
 #include "include/ui.h"
 
 #define MAX_PARTICLES 1000
-void initialize_units(DynamicArray *da, int num);
+void initialize_particles(DynamicArray *da, int num);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -27,7 +27,7 @@ int main(void)
     //--------------------------------------------------------------------------------------
 
     DynamicArray *da = create_dynamic_array(MAX_PARTICLES);
-    initialize_units(da, MAX_PARTICLES);
+    initialize_particles(da, MAX_PARTICLES);
 
     // UI: TODO move to a file
     int num_buttons = 4;
@@ -91,7 +91,7 @@ int main(void)
         .text = "Pause"};
     // end UI
 
-    // Main game loop
+    // Main loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
@@ -99,58 +99,10 @@ int main(void)
 
         // UI
         mousep = GetMousePosition();
-
-        if (CheckCollisionPointRec(mousep, button_rect(&qt_btn)))
-        {
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                qt_btn.active = !qt_btn.active;
-            }
-            qt_btn.hover = true;
-        }
-        else
-        {
-            qt_btn.hover = false;
-        }
-
-        if (CheckCollisionPointRec(mousep, button_rect(&edges_btn)))
-        {
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                edges_btn.active = !edges_btn.active;
-            }
-            edges_btn.hover = true;
-        }
-        else
-        {
-            edges_btn.hover = false;
-        }
-
-        if (CheckCollisionPointRec(mousep, button_rect(&points_btn)))
-        {
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                points_btn.active = !points_btn.active;
-            }
-            points_btn.hover = true;
-        }
-        else
-        {
-            points_btn.hover = false;
-        }
-
-        if (CheckCollisionPointRec(mousep, button_rect(&pause_btn)))
-        {
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-            {
-                pause_btn.active = !pause_btn.active;
-            }
-            pause_btn.hover = true;
-        }
-        else
-        {
-            pause_btn.hover = false;
-        }
+        button_update(&mousep, &qt_btn);
+        button_update(&mousep, &edges_btn);
+        button_update(&mousep, &points_btn);
+        button_update(&mousep, &pause_btn);
         // -----------------------------------------------------------------
 
         QTNode *root = create_qtnode_ptr((Rectangle){.x = 0.0, .y = 0.0, .width = SCREEN_WIDTHF, .height = SCREEN_HEIGHTF});
@@ -170,6 +122,7 @@ int main(void)
                 qt_insert(root, (Unit *)da->data[i], level);
                 break;
             case TYPE_B:
+                // Just to show it is possible to achieve some polymorphism
                 break;
             }
             if (false)
@@ -184,7 +137,7 @@ int main(void)
         }
         if (!pause_btn.active)
         {
-            qtnode_handle_collisions(root);
+            qt_handle_collisions(root);
         }
 
         //----------------------------------------------------------------------------------
@@ -258,7 +211,7 @@ int main(void)
     return 0;
 }
 
-void initialize_units(DynamicArray *da, int num)
+void initialize_particles(DynamicArray *da, int num)
 {
     for (int i = 0; i < num; i++)
     {

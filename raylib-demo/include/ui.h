@@ -17,6 +17,10 @@ typedef struct
     char *text;
 } Button;
 
+void button_draw(Button *button);
+Rectangle button_rect(Button *button);
+void button_update(Vector2 *mousep, Button *btn);
+
 void button_draw(Button *button)
 {
     Color color = button->active ? button->active_color : button->color;
@@ -54,6 +58,22 @@ void button_draw(Button *button)
 Rectangle button_rect(Button *button)
 {
     return (Rectangle){.x = button->x, .y = button->y, .width = button->width, .height = button->height};
+}
+
+void button_update(Vector2 *mousep, Button *btn)
+{
+    if (CheckCollisionPointRec(*mousep, button_rect(btn)))
+    {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        {
+            btn->active = !btn->active;
+        }
+        btn->hover = true;
+    }
+    else
+    {
+        btn->hover = false;
+    }
 }
 
 #endif // UI_H

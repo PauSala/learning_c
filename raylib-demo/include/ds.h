@@ -268,14 +268,14 @@ void qt_draw(QTNode *node)
     DrawRectangleLinesEx(node->rect, 0.2, (Color){200, 200, 200, 100});
 }
 
-void qtnode_handle_collisions(QTNode *node)
+void qt_handle_collisions(QTNode *node)
 {
     if (!node->is_leaf)
     {
-        qtnode_handle_collisions(node->tl);
-        qtnode_handle_collisions(node->tr);
-        qtnode_handle_collisions(node->br);
-        qtnode_handle_collisions(node->bl);
+        qt_handle_collisions(node->tl);
+        qt_handle_collisions(node->tr);
+        qt_handle_collisions(node->br);
+        qt_handle_collisions(node->bl);
         return;
     }
     for (int i = 0; i < node->count - 1; i++)

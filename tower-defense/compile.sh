@@ -1,1 +1,1 @@
-eval cc main.c -I./include $(pkg-config --libs --cflags raylib) -o sparta  -Wall -Wextra -Wpedantic -Werror
+eval cc main.c -I./include $(pkg-config --libs --cflags raylib) -o tdefense  -Wall -Wextra -Wpedantic -Werror

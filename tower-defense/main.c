@@ -31,7 +31,7 @@ int main(void)
     }
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
-    InitWindow(screenWidth, screenHeight, "Sparta's defense");
+    InitWindow(screenWidth, screenHeight, "Tower defense");
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ int main(void)
         ClearBackground(BG_COLOR);
 
         // Auxiliar grid
-        // draw_grid();
+        draw_grid();
 
         i = 0;
         while (i < army->size)

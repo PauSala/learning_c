@@ -89,8 +89,19 @@ int main(void)
         BeginDrawing();
         ClearBackground(BG_COLOR);
 
+        // UI --
+        DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
+
         // Auxiliar grid
         // draw_grid();
+
+        // Draw mouse outline
+        if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
+        {
+            Vector2 g = grid_snap(&mousep);
+            DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, TWHITE);
+        }
+        //
 
         i = 0;
         while (i < army->size)

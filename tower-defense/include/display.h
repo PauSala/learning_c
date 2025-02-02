@@ -6,7 +6,6 @@
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
-#define MENU_SIZE SCREEN_WIDTH - SCREEN_HEIGHT
 #define PG_SIZE SCREEN_HEIGHT
 
 #define SCREEN_WIDTHF 800.0f
@@ -16,6 +15,8 @@
 #define CELL_NUM (PG_SIZE / CELL_SIZE)
 
 #define BG_COLOR (Color){28, 28, 28, 255}
+#define UI_BG_COLOR (Color){33, 33, 33, 255}
+
 #define TWHITE (Color){250, 250, 250, 50}
 #define TLIME (Color){0, 158, 47, 150}
 #define TRED (Color){230, 41, 55, 150}

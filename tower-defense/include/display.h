@@ -22,6 +22,7 @@
 #define TORANGE (Color){255, 204, 102, 200}
 
 #define TBLUE (Color){51, 204, 255, 200}
+#define TBLUE_LIGHT (Color){51, 204, 255, 100}
 
 Vector2 grid_snap(Vector2 *v);
 Vector2 mouse_to_grid_center(Vector2 *v);

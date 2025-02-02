@@ -173,6 +173,9 @@ void tower_draw(Tower *t)
     }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
+    DrawRectangleLines(
+        t->center.x - ((float)CELL_SIZE / 2.0),
+        t->center.y - (float)CELL_SIZE / 2.0, (float)CELL_SIZE, (float)CELL_SIZE, TBLUE_LIGHT);
 }
 
 void projectile_draw(Tower *t)

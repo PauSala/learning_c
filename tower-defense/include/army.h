@@ -6,8 +6,8 @@
 #include "display.h"
 
 #define PROJECTILE_DELTA 40.0f
-#define EXPLOSION_DELTA 4.0f
-#define EXPLOSION_DURATION 5.0f
+#define EXPLOSION_DELTA 3.0f
+#define EXPLOSION_DURATION 7.0f
 
 typedef enum
 {
@@ -173,9 +173,10 @@ void tower_draw(Tower *t)
     }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
-    DrawRectangleLines(
-        t->center.x - ((float)CELL_SIZE / 2.0),
-        t->center.y - (float)CELL_SIZE / 2.0, (float)CELL_SIZE, (float)CELL_SIZE, TBLUE_LIGHT);
+    DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3, TBLUE);
+    // DrawRectangleLines(
+    //     t->center.x - ((float)CELL_SIZE / 2.0),
+    //     t->center.y - (float)CELL_SIZE / 2.0, (float)CELL_SIZE, (float)CELL_SIZE, TBLUE_LIGHT);
 }
 
 void projectile_draw(Tower *t)
@@ -199,8 +200,8 @@ void explosion_update(Explosion *e)
 
 void explosion_draw(Explosion *e)
 {
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 50}, BG_COLOR);
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 161, 0, 50}, BG_COLOR);
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 20}, BG_COLOR);
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 20}, BG_COLOR);
 }
 
 #endif

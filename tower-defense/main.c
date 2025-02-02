@@ -46,7 +46,7 @@ int main(void)
         enemy_update(enemy);
 
         Vector2 mousep = GetMousePosition();
-        if (is_mouse_button_pressed_left)
+        if (is_mouse_button_pressed_left && CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
         {
             Tower *t = tower_create(mouse_to_grid_center(&mousep));
             t->target = enemy;
@@ -90,7 +90,7 @@ int main(void)
         ClearBackground(BG_COLOR);
 
         // Auxiliar grid
-        draw_grid();
+        // draw_grid();
 
         i = 0;
         while (i < army->size)
@@ -108,6 +108,7 @@ int main(void)
             p++;
         }
 
+        enemy_draw(enemy);
         j = 0;
         while (j < explosions->size)
         {
@@ -115,8 +116,6 @@ int main(void)
             explosion_draw(e);
             j++;
         }
-
-        enemy_draw(enemy);
 
         EndDrawing();
         //----------------------------------------------------------------------------------

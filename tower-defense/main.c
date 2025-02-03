@@ -19,7 +19,7 @@ int main(void)
     DynamicArray *army = create_dynamic_array(200);
     DynamicArray *explosions = create_dynamic_array(200);
 
-    Enemy *enemy = enemy_create((Vector2){SCREEN_WIDTHF / 2, 0.0});
+    Enemy *enemy = enemy_create((Vector2){0.0 + (float)CELL_SIZE / 2.0, 0.0 + (float)CELL_SIZE / 2.0});
 
     bool towers[CELL_NUM][CELL_NUM];
     for (int i = 0; i < CELL_NUM; i++)
@@ -44,6 +44,7 @@ int main(void)
 
         bool is_mouse_button_pressed_left = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
         enemy_update(enemy);
+        // enemy_shortest_path(enemy, towers);
 
         Vector2 mousep = GetMousePosition();
         if (is_mouse_button_pressed_left && CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
@@ -93,7 +94,7 @@ int main(void)
         DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
 
         // Auxiliar grid
-        // draw_grid();
+        draw_grid();
 
         // Draw mouse outline
         if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
@@ -127,6 +128,8 @@ int main(void)
             explosion_draw(e);
             j++;
         }
+
+        enemy_shortest_path(enemy);
 
         EndDrawing();
         //----------------------------------------------------------------------------------

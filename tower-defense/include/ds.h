@@ -65,4 +65,59 @@ void dynamic_array_remove(DynamicArray *array, size_t index)
         array->size--;
     }
 }
+
+// Ringbuffer-based queue
+#define QUEUE_CAPACITY 400
+
+typedef struct
+{
+    int data[QUEUE_CAPACITY];
+    int front;
+    int rear;
+    int size;
+} Queue;
+
+void initQueue(Queue *q)
+{
+    q->front = 0;
+    q->rear = -1;
+    q->size = 0;
+}
+
+bool isEmpty(Queue *q)
+{
+    return q->size == 0;
+}
+
+bool isFull(Queue *q)
+{
+    return q->size == QUEUE_CAPACITY;
+}
+
+bool enqueue(Queue *q, int value)
+{
+    if (isFull(q))
+    {
+        printf("size: %d", q->size);
+        exit(1);
+        return false;
+    }
+    q->rear = (q->rear + 1) % QUEUE_CAPACITY;
+    q->data[q->rear] = value;
+    q->size++;
+    return true;
+}
+
+bool dequeue(Queue *q, int *value)
+{
+    if (isEmpty(q))
+    {
+        return false;
+    }
+    *value = q->data[q->front];
+    q->front = (q->front + 1) % QUEUE_CAPACITY;
+    q->size--;
+    return true;
+}
+
 #endif // DS_H

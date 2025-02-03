@@ -9,7 +9,7 @@
 #define PG_SIZE SCREEN_HEIGHT
 
 #define SCREEN_WIDTHF 800.0f
-#define SCREEN_HEIGHTF 500.0f
+#define SCREEN_HEIGHTF 600.0f
 
 #define CELL_SIZE 30
 #define CELL_NUM (PG_SIZE / CELL_SIZE)
@@ -21,8 +21,9 @@
 #define TLIME (Color){0, 158, 47, 150}
 #define TRED (Color){230, 41, 55, 150}
 #define TORANGE (Color){255, 204, 102, 200}
+#define BORANGE (Color){255, 179, 102, 200}
 
-#define TBLUE (Color){51, 204, 255, 200}
+#define TBLUE (Color){255, 179, 102, 200}
 #define TBLUE_LIGHT (Color){51, 204, 255, 100}
 
 Vector2 grid_snap(Vector2 *v);

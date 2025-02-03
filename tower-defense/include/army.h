@@ -24,6 +24,7 @@ typedef struct
     Vector2 direction;
     float velocity;
     int resistance;
+    Vector2 target;
 } Enemy;
 
 typedef enum
@@ -77,6 +78,8 @@ Enemy *enemy_create(Vector2 center)
     e->resistance = 100;
     e->velocity = 0.2;
     e->radius = 5.0;
+    e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
+
     return e;
 }
 
@@ -173,7 +176,7 @@ void tower_draw(Tower *t)
     }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
-    DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3, TBLUE);
+    DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3, BORANGE);
     // DrawRectangleLines(
     //     t->center.x - ((float)CELL_SIZE / 2.0),
     //     t->center.y - (float)CELL_SIZE / 2.0, (float)CELL_SIZE, (float)CELL_SIZE, TBLUE_LIGHT);
@@ -191,7 +194,9 @@ void projectile_draw(Tower *t)
 
 void explosion_update(Explosion *e)
 {
-    e->dt += 0.5 * (float)e->direction;
+    // float a = e->direction == 1 ? 1.0 : 8.0;
+    // printf("%d %f\n", e->direction, a);
+    e->dt += 0.3 * (float)e->direction;
     if (e->dt > EXPLOSION_DURATION)
     {
         e->direction = -1;
@@ -202,6 +207,103 @@ void explosion_draw(Explosion *e)
 {
     DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 20}, BG_COLOR);
     DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 20}, BG_COLOR);
+}
+
+int vec_to_index(Vector2 v)
+{
+    return (int)v.y * CELL_NUM + (int)v.x;
+}
+
+Vector2 index_to_vec(int index)
+{
+    return (Vector2){(float)(index % CELL_NUM), (float)(index / CELL_NUM)};
+}
+
+Vector2 enemy_shortest_path(Enemy *e)
+{
+    Vector2 curr = world_to_grid(&e->center);
+    Vector2 target = world_to_grid(&e->target);
+    int cint = vec_to_index(curr);
+    int tint = vec_to_index(target);
+
+    int parents[CELL_NUM][CELL_NUM] = {{0}};
+    int visited[CELL_NUM][CELL_NUM] = {{false}};
+
+    // printf("TARGET: %f %f | tint: %d\n", target.x, target.y, tint);
+    printf("curr: %f %f |cint: %d\n", curr.x, curr.y, cint);
+
+    DrawCircle(target.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, target.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 5.5, RED);
+
+    Queue q;
+    initQueue(&q);
+
+    int current = vec_to_index(curr);
+    enqueue(&q, current);
+    visited[(int)curr.y][(int)curr.x] = true;
+
+    while (!isEmpty(&q))
+    {
+        dequeue(&q, &current);
+
+        if (current == tint)
+        {
+            break;
+        }
+
+        curr = index_to_vec(current);
+
+        if (curr.x < CELL_NUM - 1)
+        {
+            if (!visited[(int)curr.y][(int)curr.x + 1])
+            {
+                visited[(int)curr.y][(int)curr.x + 1] = true;
+                parents[(int)curr.y][(int)curr.x + 1] = current;
+                enqueue(&q, vec_to_index((Vector2){curr.x + 1.0, curr.y}));
+            }
+        }
+        if (curr.x > 1)
+        {
+            if (!visited[(int)curr.y][(int)curr.x - 1])
+            {
+                visited[(int)curr.y][(int)curr.x - 1] = true;
+                parents[(int)curr.y][(int)curr.x - 1] = current;
+                enqueue(&q, vec_to_index((Vector2){curr.x - 1.0, curr.y}));
+            }
+        }
+        if (curr.y < CELL_NUM - 1)
+        {
+            if (!visited[(int)curr.y + 1][(int)curr.x])
+            {
+                visited[(int)curr.y + 1][(int)curr.x] = true;
+                parents[(int)curr.y + 1][(int)curr.x] = current;
+                enqueue(&q, vec_to_index((Vector2){curr.x, curr.y + 1.0}));
+            }
+        }
+        if (curr.y > 1)
+        {
+            if (!visited[(int)curr.y - 1][(int)curr.x])
+            {
+                visited[(int)curr.y - 1][(int)curr.x] = true;
+                parents[(int)curr.y - 1][(int)curr.x] = current;
+                enqueue(&q, vec_to_index((Vector2){curr.x, curr.y - 1.0}));
+            }
+        }
+    }
+    Vector2 child = index_to_vec(current);
+
+    int parent = parents[(int)child.y][(int)child.x];
+    while (parent != cint)
+    {
+        DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
+        child = index_to_vec(parent);
+        parent = parents[(int)child.y][(int)child.x];
+        // printf("Parent %d\n", parent);
+    }
+
+    printf("Vec: %f %f\n", child.x, child.y);
+    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
+    // exit(1);
+    return child;
 }
 
 #endif

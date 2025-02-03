@@ -61,13 +61,15 @@ typedef struct
 } Explosion;
 
 Enemy *enemy_create(Vector2 center);
-void enemy_update(Enemy *enemy);
+void enemy_update(Enemy *enemy, bool towers[CELL_NUM][CELL_NUM]);
 Tower *tower_create(Vector2 center);
 void tower_update(Tower *t, DynamicArray *explosions);
 void tower_draw(Tower *tower);
 void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
+
+Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM]);
 
 Enemy *enemy_create(Vector2 center)
 {
@@ -83,10 +85,17 @@ Enemy *enemy_create(Vector2 center)
     return e;
 }
 
-void enemy_update(Enemy *enemy)
+void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
-    enemy->center.x = enemy->center.x + (enemy->direction.x * enemy->velocity);
-    enemy->center.y = enemy->center.y + (enemy->direction.y * enemy->velocity);
+    Vector2 next_cell = enemy_shortest_path(e, towers);
+
+    next_cell = grid_to_world(&next_cell);
+    Vector2 dir = Vector2Subtract(next_cell, e->center);
+
+    e->direction = Vector2Normalize(dir);
+
+    e->center.x = e->center.x + (e->direction.x * e->velocity);
+    e->center.y = e->center.y + (e->direction.y * e->velocity);
 }
 
 void enemy_draw(Enemy *e)
@@ -177,9 +186,6 @@ void tower_draw(Tower *t)
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3, BORANGE);
-    // DrawRectangleLines(
-    //     t->center.x - ((float)CELL_SIZE / 2.0),
-    //     t->center.y - (float)CELL_SIZE / 2.0, (float)CELL_SIZE, (float)CELL_SIZE, TBLUE_LIGHT);
 }
 
 void projectile_draw(Tower *t)
@@ -194,8 +200,6 @@ void projectile_draw(Tower *t)
 
 void explosion_update(Explosion *e)
 {
-    // float a = e->direction == 1 ? 1.0 : 8.0;
-    // printf("%d %f\n", e->direction, a);
     e->dt += 0.3 * (float)e->direction;
     if (e->dt > EXPLOSION_DURATION)
     {
@@ -219,7 +223,7 @@ Vector2 index_to_vec(int index)
     return (Vector2){(float)(index % CELL_NUM), (float)(index / CELL_NUM)};
 }
 
-Vector2 enemy_shortest_path(Enemy *e)
+Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
     Vector2 curr = world_to_grid(&e->center);
     Vector2 target = world_to_grid(&e->target);
@@ -228,9 +232,6 @@ Vector2 enemy_shortest_path(Enemy *e)
 
     int parents[CELL_NUM][CELL_NUM] = {{0}};
     int visited[CELL_NUM][CELL_NUM] = {{false}};
-
-    // printf("TARGET: %f %f | tint: %d\n", target.x, target.y, tint);
-    printf("curr: %f %f |cint: %d\n", curr.x, curr.y, cint);
 
     DrawCircle(target.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, target.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 5.5, RED);
 
@@ -252,57 +253,46 @@ Vector2 enemy_shortest_path(Enemy *e)
 
         curr = index_to_vec(current);
 
-        if (curr.x < CELL_NUM - 1)
+        if (curr.x < CELL_NUM - 1 &&
+            !visited[(int)curr.y][(int)curr.x + 1] && !towers[(int)curr.y][(int)curr.x + 1])
         {
-            if (!visited[(int)curr.y][(int)curr.x + 1])
-            {
-                visited[(int)curr.y][(int)curr.x + 1] = true;
-                parents[(int)curr.y][(int)curr.x + 1] = current;
-                enqueue(&q, vec_to_index((Vector2){curr.x + 1.0, curr.y}));
-            }
+            visited[(int)curr.y][(int)curr.x + 1] = true;
+            parents[(int)curr.y][(int)curr.x + 1] = current;
+            enqueue(&q, vec_to_index((Vector2){curr.x + 1.0, curr.y}));
         }
-        if (curr.x > 1)
+
+        if (curr.x > 1 && !visited[(int)curr.y][(int)curr.x - 1] && !towers[(int)curr.y][(int)curr.x - 1])
         {
-            if (!visited[(int)curr.y][(int)curr.x - 1])
-            {
-                visited[(int)curr.y][(int)curr.x - 1] = true;
-                parents[(int)curr.y][(int)curr.x - 1] = current;
-                enqueue(&q, vec_to_index((Vector2){curr.x - 1.0, curr.y}));
-            }
+            visited[(int)curr.y][(int)curr.x - 1] = true;
+            parents[(int)curr.y][(int)curr.x - 1] = current;
+            enqueue(&q, vec_to_index((Vector2){curr.x - 1.0, curr.y}));
         }
-        if (curr.y < CELL_NUM - 1)
+
+        if (curr.y < CELL_NUM - 1 && !visited[(int)curr.y + 1][(int)curr.x] && !towers[(int)curr.y + 1][(int)curr.x])
         {
-            if (!visited[(int)curr.y + 1][(int)curr.x])
-            {
-                visited[(int)curr.y + 1][(int)curr.x] = true;
-                parents[(int)curr.y + 1][(int)curr.x] = current;
-                enqueue(&q, vec_to_index((Vector2){curr.x, curr.y + 1.0}));
-            }
+            visited[(int)curr.y + 1][(int)curr.x] = true;
+            parents[(int)curr.y + 1][(int)curr.x] = current;
+            enqueue(&q, vec_to_index((Vector2){curr.x, curr.y + 1.0}));
         }
-        if (curr.y > 1)
+
+        if (curr.y > 1 && !visited[(int)curr.y - 1][(int)curr.x] && !towers[(int)curr.y - 1][(int)curr.x])
         {
-            if (!visited[(int)curr.y - 1][(int)curr.x])
-            {
-                visited[(int)curr.y - 1][(int)curr.x] = true;
-                parents[(int)curr.y - 1][(int)curr.x] = current;
-                enqueue(&q, vec_to_index((Vector2){curr.x, curr.y - 1.0}));
-            }
+            visited[(int)curr.y - 1][(int)curr.x] = true;
+            parents[(int)curr.y - 1][(int)curr.x] = current;
+            enqueue(&q, vec_to_index((Vector2){curr.x, curr.y - 1.0}));
         }
     }
-    Vector2 child = index_to_vec(current);
 
+    Vector2 child = index_to_vec(current);
     int parent = parents[(int)child.y][(int)child.x];
     while (parent != cint)
     {
         DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
         child = index_to_vec(parent);
         parent = parents[(int)child.y][(int)child.x];
-        // printf("Parent %d\n", parent);
     }
 
-    printf("Vec: %f %f\n", child.x, child.y);
-    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
-    // exit(1);
+    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 1.0, WHITE);
     return child;
 }
 

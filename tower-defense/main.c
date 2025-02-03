@@ -43,7 +43,7 @@ int main(void)
         //----------------------------------------------------------------------------------
 
         bool is_mouse_button_pressed_left = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
-        enemy_update(enemy);
+        enemy_update(enemy, towers);
         // enemy_shortest_path(enemy, towers);
 
         Vector2 mousep = GetMousePosition();
@@ -52,11 +52,10 @@ int main(void)
             Tower *t = tower_create(mouse_to_grid_center(&mousep));
             t->target = enemy;
             Vector2 grid_pos = world_to_grid(&t->center);
-            if (!towers[(int)grid_pos.x][(int)grid_pos.y])
+            if (!towers[(int)grid_pos.y][(int)grid_pos.x])
             {
-
                 dynamic_array_add(army, t);
-                towers[(int)grid_pos.x][(int)grid_pos.y] = true;
+                towers[(int)grid_pos.y][(int)grid_pos.x] = true;
             }
         }
 
@@ -129,7 +128,7 @@ int main(void)
             j++;
         }
 
-        enemy_shortest_path(enemy);
+        enemy_shortest_path(enemy, towers);
 
         EndDrawing();
         //----------------------------------------------------------------------------------

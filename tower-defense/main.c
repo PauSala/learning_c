@@ -44,7 +44,6 @@ int main(void)
 
         bool is_mouse_button_pressed_left = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
         enemy_update(enemy, towers);
-        // enemy_shortest_path(enemy, towers);
 
         Vector2 mousep = GetMousePosition();
         if (is_mouse_button_pressed_left && CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
@@ -81,7 +80,6 @@ int main(void)
                 j++;
             }
         }
-
         //----------------------------------------------------------------------------------
 
         // Draw

@@ -78,7 +78,7 @@ Enemy *enemy_create(Vector2 center)
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
     e->resistance = 100;
-    e->velocity = 0.2;
+    e->velocity = 1.0;
     e->radius = 5.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
 
@@ -87,11 +87,10 @@ Enemy *enemy_create(Vector2 center)
 
 void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
-    Vector2 next_cell = enemy_shortest_path(e, towers);
 
+    Vector2 next_cell = enemy_shortest_path(e, towers);
     next_cell = grid_to_world(&next_cell);
     Vector2 dir = Vector2Subtract(next_cell, e->center);
-
     e->direction = Vector2Normalize(dir);
 
     e->center.x = e->center.x + (e->direction.x * e->velocity);
@@ -145,7 +144,6 @@ void tower_update(Tower *t, DynamicArray *explosions)
         Vector2 p = get_circle_center_from_origin(t->center, t->target->center, t->time_passed * PROJECTILE_DELTA);
         if (CheckCollisionCircles(p, 5.0, t->target->center, t->target->radius))
         {
-            printf("Explosion send!\n");
             Explosion *e = (Explosion *)malloc(sizeof(Explosion));
             if (!e)
             {
@@ -227,6 +225,7 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
     Vector2 curr = world_to_grid(&e->center);
     Vector2 target = world_to_grid(&e->target);
+
     int cint = vec_to_index(curr);
     int tint = vec_to_index(target);
 
@@ -261,7 +260,7 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
             enqueue(&q, vec_to_index((Vector2){curr.x + 1.0, curr.y}));
         }
 
-        if (curr.x > 1 && !visited[(int)curr.y][(int)curr.x - 1] && !towers[(int)curr.y][(int)curr.x - 1])
+        if (curr.x > 0 && !visited[(int)curr.y][(int)curr.x - 1] && !towers[(int)curr.y][(int)curr.x - 1])
         {
             visited[(int)curr.y][(int)curr.x - 1] = true;
             parents[(int)curr.y][(int)curr.x - 1] = current;
@@ -275,7 +274,7 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
             enqueue(&q, vec_to_index((Vector2){curr.x, curr.y + 1.0}));
         }
 
-        if (curr.y > 1 && !visited[(int)curr.y - 1][(int)curr.x] && !towers[(int)curr.y - 1][(int)curr.x])
+        if (curr.y > 0 && !visited[(int)curr.y - 1][(int)curr.x] && !towers[(int)curr.y - 1][(int)curr.x])
         {
             visited[(int)curr.y - 1][(int)curr.x] = true;
             parents[(int)curr.y - 1][(int)curr.x] = current;
@@ -292,7 +291,7 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
         parent = parents[(int)child.y][(int)child.x];
     }
 
-    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 1.0, WHITE);
+    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
     return child;
 }
 

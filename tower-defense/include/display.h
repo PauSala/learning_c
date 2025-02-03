@@ -18,7 +18,7 @@
 #define UI_BG_COLOR (Color){33, 33, 33, 255}
 
 #define TWHITE (Color){250, 250, 250, 50}
-#define TLIME (Color){0, 158, 47, 150}
+#define TPINK (Color){255, 153, 255, 200}
 #define TRED (Color){230, 41, 55, 150}
 #define TORANGE (Color){255, 204, 102, 200}
 #define BORANGE (Color){255, 179, 102, 200}

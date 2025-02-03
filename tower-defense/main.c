@@ -91,7 +91,7 @@ int main(void)
         DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
 
         // Auxiliar grid
-        draw_grid();
+        // draw_grid();
 
         // Draw mouse outline
         if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
@@ -117,7 +117,6 @@ int main(void)
             p++;
         }
 
-        enemy_draw(enemy);
         j = 0;
         while (j < explosions->size)
         {
@@ -126,7 +125,7 @@ int main(void)
             j++;
         }
 
-        enemy_shortest_path(enemy, towers);
+        enemy_draw(enemy);
 
         EndDrawing();
         //----------------------------------------------------------------------------------

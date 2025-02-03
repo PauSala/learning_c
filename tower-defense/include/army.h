@@ -23,7 +23,7 @@ typedef struct
     Vector2 center;
     Vector2 direction;
     float velocity;
-    int resistance;
+    float resistance;
     Vector2 target;
 } Enemy;
 
@@ -47,7 +47,7 @@ typedef struct
     bool explosion_send;
     float time_passed;
     float velocity;
-    int power;
+    float power;
     int cost;
 
 } Tower;
@@ -57,6 +57,7 @@ typedef struct
     float dt;
     int direction;
     Enemy *target;
+    Tower *origin;
 
 } Explosion;
 
@@ -97,9 +98,49 @@ void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     e->center.y = e->center.y + (e->direction.y * e->velocity);
 }
 
+// Function to rotate a point around a center by a given angle
+Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
+{
+    float s = sin(angle);
+    float c = cos(angle);
+
+    point.x -= center.x;
+    point.y -= center.y;
+
+    float xnew = point.x * c - point.y * s;
+    float ynew = point.x * s + point.y * c;
+
+    point.x = xnew + center.x;
+    point.y = ynew + center.y;
+
+    return point;
+}
+
+// Function to draw a rotated triangle
+void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
+{
+    Vector2 vertices[3] = {
+        {center.x, center.y + size},
+        {center.x + size / 2, center.y - size / 2},
+        {center.x - size / 2, center.y - size / 2}};
+
+    float angle = atan2(direction.y, direction.x) - atan2(1.0, 0.0);
+
+    for (int i = 0; i < 3; i++)
+    {
+        vertices[i] = RotatePoint(vertices[i], center, angle);
+    }
+
+    // Draw the triangle
+    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
+}
+
 void enemy_draw(Enemy *e)
 {
-    DrawCircleGradient(e->center.x, e->center.y, e->radius, PURPLE, BG_COLOR);
+    DrawRotatedTriangle(e->center, e->direction, 5.5);
+
+    int y = (float)30 * e->resistance / 100.0;
+    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 3, TPINK);
 }
 
 Tower *tower_create(Vector2 center)
@@ -115,7 +156,7 @@ Tower *tower_create(Vector2 center)
     t->explosion_send = false;
     t->time_passed = 0.0;
     t->velocity = 5.0;
-    t->power = 20;
+    t->power = 0.1;
     t->cost = 20;
     return t;
 }
@@ -152,6 +193,7 @@ void tower_update(Tower *t, DynamicArray *explosions)
             }
             e->dt = 0.0;
             e->target = t->target;
+            e->origin = t;
             e->direction = 1;
             dynamic_array_add(explosions, e);
             t->explosion_send = true;
@@ -203,6 +245,10 @@ void explosion_update(Explosion *e)
     {
         e->direction = -1;
     }
+    if (e->origin)
+    {
+        e->target->resistance -= e->origin->power;
+    }
 }
 
 void explosion_draw(Explosion *e)
@@ -227,6 +273,8 @@ static const Vector2 directions[] = {
     {0.0, 1.0},
     {0.0, -1.0}};
 
+// Returns the next Cell an enemy should go taking in account its target, position and towers
+// TODO: call only on enemy cell change
 Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
     Vector2 curr = world_to_grid(&e->center);
@@ -284,12 +332,12 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     int parent = parents[(int)child.y][(int)child.x];
     while (parent != cint)
     {
-        DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
+        // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
         child = index_to_vec(parent);
         parent = parents[(int)child.y][(int)child.x];
     }
 
-    DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
+    // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
     return child;
 }
 

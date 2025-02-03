@@ -221,6 +221,12 @@ Vector2 index_to_vec(int index)
     return (Vector2){(float)(index % CELL_NUM), (float)(index / CELL_NUM)};
 }
 
+static const Vector2 directions[] = {
+    {1.0, 0.0},
+    {-1.0, 0.0},
+    {0.0, 1.0},
+    {0.0, -1.0}};
+
 Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
     Vector2 curr = world_to_grid(&e->center);
@@ -257,34 +263,20 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 
         curr = index_to_vec(current);
 
-        // TODO: turn this mess into something readable
-        if (curr.x < CELL_NUM - 1 &&
-            !visited[(int)curr.y][(int)curr.x + 1] && !towers[(int)curr.y][(int)curr.x + 1])
+        for (int i = 0; i < 4; i++)
         {
-            visited[(int)curr.y][(int)curr.x + 1] = true;
-            parents[(int)curr.y][(int)curr.x + 1] = current;
-            enqueue(&q, vec_to_index((Vector2){curr.x + 1.0, curr.y}));
-        }
+            Vector2 dir = directions[i];
+            int newX = (int)(curr.x + dir.x);
+            int newY = (int)(curr.y + dir.y);
 
-        if (curr.x > 0 && !visited[(int)curr.y][(int)curr.x - 1] && !towers[(int)curr.y][(int)curr.x - 1])
-        {
-            visited[(int)curr.y][(int)curr.x - 1] = true;
-            parents[(int)curr.y][(int)curr.x - 1] = current;
-            enqueue(&q, vec_to_index((Vector2){curr.x - 1.0, curr.y}));
-        }
+            if (newX >= 0 && newX < CELL_NUM && newY >= 0 && newY < CELL_NUM &&
+                !visited[newY][newX] && !towers[newY][newX])
+            {
 
-        if (curr.y < CELL_NUM - 1 && !visited[(int)curr.y + 1][(int)curr.x] && !towers[(int)curr.y + 1][(int)curr.x])
-        {
-            visited[(int)curr.y + 1][(int)curr.x] = true;
-            parents[(int)curr.y + 1][(int)curr.x] = current;
-            enqueue(&q, vec_to_index((Vector2){curr.x, curr.y + 1.0}));
-        }
-
-        if (curr.y > 0 && !visited[(int)curr.y - 1][(int)curr.x] && !towers[(int)curr.y - 1][(int)curr.x])
-        {
-            visited[(int)curr.y - 1][(int)curr.x] = true;
-            parents[(int)curr.y - 1][(int)curr.x] = current;
-            enqueue(&q, vec_to_index((Vector2){curr.x, curr.y - 1.0}));
+                visited[newY][newX] = true;
+                parents[newY][newX] = current;
+                enqueue(&q, vec_to_index((Vector2){newX, newY}));
+            }
         }
     }
 

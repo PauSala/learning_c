@@ -1,13 +1,13 @@
 #ifndef DS_H
 #define DS_H
 
-#include "raymath.h"
 #include "raylib.h"
+#include "raymath.h"
 
 #include <stdlib.h>
 #include <string.h>
-#include "stdio.h"
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "particle.h"
 

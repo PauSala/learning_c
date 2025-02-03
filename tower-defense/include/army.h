@@ -78,7 +78,7 @@ Enemy *enemy_create(Vector2 center)
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
     e->resistance = 100;
-    e->velocity = 1.0;
+    e->velocity = 0.5;
     e->radius = 5.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
 
@@ -174,7 +174,7 @@ void tower_update(Tower *t, DynamicArray *explosions)
 
 void tower_draw(Tower *t)
 {
-    // TODO: claculate this once at tower update
+    // TODO: calculate this once at tower update
     if (t->target != NULL)
     {
         Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, TOWER_RADIUS);
@@ -229,6 +229,11 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     int cint = vec_to_index(curr);
     int tint = vec_to_index(target);
 
+    if (cint == tint)
+    {
+        return target;
+    }
+
     int parents[CELL_NUM][CELL_NUM] = {{0}};
     int visited[CELL_NUM][CELL_NUM] = {{false}};
 
@@ -252,6 +257,7 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 
         curr = index_to_vec(current);
 
+        // TODO: turn this mess into something readable
         if (curr.x < CELL_NUM - 1 &&
             !visited[(int)curr.y][(int)curr.x + 1] && !towers[(int)curr.y][(int)curr.x + 1])
         {

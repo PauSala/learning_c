@@ -7,6 +7,8 @@
 #include "./include/enemy.h"
 
 void draw_grid(void);
+void draw_ui(void);
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -109,7 +111,7 @@ int main(void)
         ClearBackground(BG_COLOR);
 
         // UI --
-        DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
+        draw_ui();
 
         // Auxiliar grid
         draw_grid();
@@ -122,36 +124,8 @@ int main(void)
         // }
         //
 
-        // Towers
-        i = 0;
-        while (i < army->size)
-        {
-            Tower *t = army->data[i];
-            tower_draw(t);
-            i++;
-        }
-
-        // Explosions
-        i = 0;
-        while (i < explosions->size)
-        {
-            Explosion *e = explosions->data[i];
-            explosion_draw(e);
-            i++;
-        }
-
-        // Enemies
-        i = 0;
-        while (i < enemies->size)
-        {
-            Enemy *e = enemies->data[i];
-            enemy_draw(e);
-            // if (CheckCollisionPointCircle(mousep, e->center, e->radius))
-            // {
-            //     enemy_life_draw(e);
-            // }
-            i++;
-        }
+        // Playground
+        draw_playground(army, explosions, enemies);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -171,5 +145,65 @@ void draw_grid(void)
     {
         DrawLineEx((Vector2){i, 0}, (Vector2){i, SCREEN_HEIGHT}, 0.3, TWHITE);
         DrawLineEx((Vector2){0, i}, (Vector2){PG_SIZE, i}, 1.0, TWHITE);
+    }
+}
+
+void draw_ui(void)
+{
+    // Menu background
+    DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
+
+    // Select tower
+    float margin = 12.0;
+    float width = (SCREEN_WIDTH - PG_SIZE) - margin * 2;
+    float height = 70.0;
+
+    Rectangle icon_container = (Rectangle){PG_SIZE + margin, margin, width, height};
+
+    DrawRectangleRounded(icon_container, 0.1, 4, UI_WIDGET_COLOR);
+
+    // Tower icons
+    float icons_x_line = 3.0;
+    float tmargin = (width - icons_x_line * CELL_SIZE) / (icons_x_line + 1);
+
+    Vector2 tpos = MeasureTextEx(GetFontDefault(), "Available Towers", 12, 1.0);
+    DrawText("Available Towers", PG_SIZE + margin + (width - tpos.x) / 2.0, tmargin, 12, TORANGE);
+
+    float pos = icon_container.x + tmargin + (float)CELL_SIZE / 2.0;
+    tower_a_draw((Vector2){pos, icon_container.y + 2.0 * tmargin + 4.0});
+    pos += CELL_SIZE + tmargin;
+    tower_b_draw((Vector2){pos, icon_container.y + 2.0 * tmargin + 4.0});
+    pos += CELL_SIZE + tmargin;
+    tower_c_draw((Vector2){pos, icon_container.y + 2.0 * tmargin + 4.0});
+}
+
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies)
+{
+
+    // Towers
+    size_t i = 0;
+    while (i < army->size)
+    {
+        Tower *t = army->data[i];
+        tower_draw(t);
+        i++;
+    }
+
+    // Explosions
+    i = 0;
+    while (i < explosions->size)
+    {
+        Explosion *e = explosions->data[i];
+        explosion_draw(e);
+        i++;
+    }
+
+    // Enemies
+    i = 0;
+    while (i < enemies->size)
+    {
+        Enemy *e = enemies->data[i];
+        enemy_draw(e);
+        i++;
     }
 }

@@ -108,8 +108,6 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     int parents[CELL_NUM][CELL_NUM] = {{0}};
     int visited[CELL_NUM][CELL_NUM] = {{false}};
 
-    DrawCircle(target.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, target.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 5.5, RED);
-
     Queue q;
     initQueue(&q);
 

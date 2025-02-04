@@ -172,6 +172,7 @@ void explosion_update(Explosion *e)
     {
         e->direction = -1;
     }
+
     if (e->dt <= 0.0 || e->target->to_remove)
     {
         e->target = NULL;

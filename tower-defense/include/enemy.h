@@ -38,7 +38,7 @@ Enemy *enemy_create(Vector2 center)
     e->ty = E1;
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
-    e->resistance = 3;
+    e->resistance = 100;
     e->velocity = 0.5;
     e->radius = 5.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
@@ -78,51 +78,6 @@ void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 
     e->center.x = e->center.x + (e->direction.x * e->velocity);
     e->center.y = e->center.y + (e->direction.y * e->velocity);
-}
-
-// Function to rotate a point around a center by a given angle
-Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
-{
-    float s = sin(angle);
-    float c = cos(angle);
-
-    point.x -= center.x;
-    point.y -= center.y;
-
-    float xnew = point.x * c - point.y * s;
-    float ynew = point.x * s + point.y * c;
-
-    point.x = xnew + center.x;
-    point.y = ynew + center.y;
-
-    return point;
-}
-
-// Function to draw a rotated triangle
-void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
-{
-    Vector2 vertices[3] = {
-        {center.x, center.y + size},
-        {center.x + size / 2, center.y - size / 2},
-        {center.x - size / 2, center.y - size / 2}};
-
-    float angle = atan2(direction.y, direction.x) - atan2(1.0, 0.0);
-
-    for (int i = 0; i < 3; i++)
-    {
-        vertices[i] = RotatePoint(vertices[i], center, angle);
-    }
-
-    // Draw the triangle
-    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
-}
-
-void enemy_draw(Enemy *e)
-{
-    DrawRotatedTriangle(e->center, e->direction, 5.5);
-
-    int y = (float)20 * e->resistance / 100.0;
-    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 3, TPINK);
 }
 
 static const Vector2 directions[] = {
@@ -197,6 +152,50 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 
     // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
     return child;
+}
+
+// Rotate a point around a center by a given angle
+Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
+{
+    float s = sin(angle);
+    float c = cos(angle);
+
+    point.x -= center.x;
+    point.y -= center.y;
+
+    float xnew = point.x * c - point.y * s;
+    float ynew = point.x * s + point.y * c;
+
+    point.x = xnew + center.x;
+    point.y = ynew + center.y;
+
+    return point;
+}
+
+void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
+{
+    Vector2 vertices[3] = {
+        {center.x, center.y + size},
+        {center.x + size / 2, center.y - size / 2},
+        {center.x - size / 2, center.y - size / 2}};
+
+    float angle = atan2(direction.y, direction.x) - atan2(1.0, 0.0);
+
+    for (int i = 0; i < 3; i++)
+    {
+        vertices[i] = RotatePoint(vertices[i], center, angle);
+    }
+
+    // Draw the triangle
+    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
+}
+
+void enemy_draw(Enemy *e)
+{
+    DrawRotatedTriangle(e->center, e->direction, 5.5);
+
+    int y = (float)20 * e->resistance / 100.0;
+    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 3, TPINK);
 }
 
 #endif

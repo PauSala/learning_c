@@ -30,6 +30,8 @@ Vector2 grid_snap(Vector2 *v);
 Vector2 mouse_to_grid_center(Vector2 *v);
 Vector2 world_to_grid(Vector2 *v);
 Vector2 grid_to_world(Vector2 *v);
+int vec_to_index(Vector2 v);
+Vector2 index_to_vec(int index);
 
 Vector2 grid_snap(Vector2 *v)
 {
@@ -56,4 +58,13 @@ Vector2 grid_to_world(Vector2 *v)
     return (Vector2){v->x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, v->y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0};
 }
 
+int vec_to_index(Vector2 v)
+{
+    return (int)v.y * CELL_NUM + (int)v.x;
+}
+
+Vector2 index_to_vec(int index)
+{
+    return (Vector2){(float)(index % CELL_NUM), (float)(index / CELL_NUM)};
+}
 #endif // CONSTANTS_H

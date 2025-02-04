@@ -4,28 +4,11 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include "display.h"
+#include "enemy.h"
 
 #define PROJECTILE_DELTA 40.0f
 #define EXPLOSION_DELTA 3.0f
 #define EXPLOSION_DURATION 7.0f
-
-typedef enum
-{
-    E1,
-    E2,
-    E3,
-} EnemyT;
-
-typedef struct
-{
-    EnemyT ty;
-    float radius;
-    Vector2 center;
-    Vector2 direction;
-    float velocity;
-    float resistance;
-    Vector2 target;
-} Enemy;
 
 typedef enum
 {
@@ -42,7 +25,6 @@ typedef struct
     Vector2 center;
     Enemy *target;
     float target_dist;
-    float partial_dist;
     bool shooting;
     bool explosion_send;
     float time_passed;
@@ -58,90 +40,16 @@ typedef struct
     int direction;
     Enemy *target;
     Tower *origin;
+    bool to_remove;
 
 } Explosion;
 
-Enemy *enemy_create(Vector2 center);
-void enemy_update(Enemy *enemy, bool towers[CELL_NUM][CELL_NUM]);
 Tower *tower_create(Vector2 center);
-void tower_update(Tower *t, DynamicArray *explosions);
+void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies);
 void tower_draw(Tower *tower);
 void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
-
-Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM]);
-
-Enemy *enemy_create(Vector2 center)
-{
-    Enemy *e = (Enemy *)malloc(sizeof(Enemy));
-    e->ty = E1;
-    e->center = center;
-    e->direction = (Vector2){0.0, 1.0};
-    e->resistance = 100;
-    e->velocity = 0.5;
-    e->radius = 5.0;
-    e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
-
-    return e;
-}
-
-void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
-{
-
-    Vector2 next_cell = enemy_shortest_path(e, towers);
-    next_cell = grid_to_world(&next_cell);
-    Vector2 dir = Vector2Subtract(next_cell, e->center);
-    e->direction = Vector2Normalize(dir);
-
-    e->center.x = e->center.x + (e->direction.x * e->velocity);
-    e->center.y = e->center.y + (e->direction.y * e->velocity);
-}
-
-// Function to rotate a point around a center by a given angle
-Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
-{
-    float s = sin(angle);
-    float c = cos(angle);
-
-    point.x -= center.x;
-    point.y -= center.y;
-
-    float xnew = point.x * c - point.y * s;
-    float ynew = point.x * s + point.y * c;
-
-    point.x = xnew + center.x;
-    point.y = ynew + center.y;
-
-    return point;
-}
-
-// Function to draw a rotated triangle
-void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
-{
-    Vector2 vertices[3] = {
-        {center.x, center.y + size},
-        {center.x + size / 2, center.y - size / 2},
-        {center.x - size / 2, center.y - size / 2}};
-
-    float angle = atan2(direction.y, direction.x) - atan2(1.0, 0.0);
-
-    for (int i = 0; i < 3; i++)
-    {
-        vertices[i] = RotatePoint(vertices[i], center, angle);
-    }
-
-    // Draw the triangle
-    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
-}
-
-void enemy_draw(Enemy *e)
-{
-    DrawRotatedTriangle(e->center, e->direction, 5.5);
-
-    int y = (float)30 * e->resistance / 100.0;
-    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 3, TPINK);
-}
 
 Tower *tower_create(Vector2 center)
 {
@@ -151,7 +59,6 @@ Tower *tower_create(Vector2 center)
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
-    t->partial_dist = 0.0;
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
@@ -169,16 +76,35 @@ Vector2 get_circle_center_from_origin(Vector2 origin, Vector2 dest, float d)
     return Vector2Add(origin, scaled_direction);
 }
 
-void tower_update(Tower *t, DynamicArray *explosions)
+void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
 {
-    if (t->target == NULL)
+    // Target is scheduled for delete
+    if (t->target != NULL && t->target->to_remove)
     {
-        // TODO: find another target
+        printf("Target is null now\n");
+        t->target = NULL;
         return;
     }
 
+    // Found enemy if target is null
+    if (t->target == NULL)
+    {
+        for (size_t i = 0; i < enemies->size; i++)
+        {
+            Enemy *e = enemies->data[i];
+            if (CheckCollisionCircles(t->center, t->range, e->center, e->radius))
+            {
+                t->target = e;
+                break;
+            }
+        }
+        if (t->target == NULL)
+        {
+            return;
+        }
+    }
+
     t->target_dist = Vector2Distance(t->center, t->target->center);
-    t->partial_dist = t->time_passed * PROJECTILE_DELTA;
 
     if (!t->explosion_send)
     {
@@ -195,6 +121,7 @@ void tower_update(Tower *t, DynamicArray *explosions)
             e->target = t->target;
             e->origin = t;
             e->direction = 1;
+            e->to_remove = false;
             dynamic_array_add(explosions, e);
             t->explosion_send = true;
             t->shooting = false;
@@ -222,6 +149,7 @@ void tower_draw(Tower *t)
         Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, TOWER_RADIUS);
         Vector2 p2 = get_circle_center_from_origin(t->center, t->target->center, TOWER_RADIUS + CANON);
         DrawLineEx(p1, p2, 3.0, TBLUE);
+        projectile_draw(t);
     }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
@@ -245,6 +173,14 @@ void explosion_update(Explosion *e)
     {
         e->direction = -1;
     }
+    if (e->dt <= 0.0 || e->target->to_remove)
+    {
+        e->target = NULL;
+        e->to_remove = true;
+        e->origin = NULL;
+        return;
+    }
+
     if (e->origin)
     {
         e->target->resistance -= e->origin->power;
@@ -253,92 +189,12 @@ void explosion_update(Explosion *e)
 
 void explosion_draw(Explosion *e)
 {
+    if (e->to_remove)
+    {
+        return;
+    }
     DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 20}, BG_COLOR);
     DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 20}, BG_COLOR);
-}
-
-int vec_to_index(Vector2 v)
-{
-    return (int)v.y * CELL_NUM + (int)v.x;
-}
-
-Vector2 index_to_vec(int index)
-{
-    return (Vector2){(float)(index % CELL_NUM), (float)(index / CELL_NUM)};
-}
-
-static const Vector2 directions[] = {
-    {1.0, 0.0},
-    {-1.0, 0.0},
-    {0.0, 1.0},
-    {0.0, -1.0}};
-
-// Returns the next Cell an enemy should go taking in account its target, position and towers
-// TODO: call only on enemy cell change
-Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
-{
-    Vector2 curr = world_to_grid(&e->center);
-    Vector2 target = world_to_grid(&e->target);
-
-    int cint = vec_to_index(curr);
-    int tint = vec_to_index(target);
-
-    if (cint == tint)
-    {
-        return target;
-    }
-
-    int parents[CELL_NUM][CELL_NUM] = {{0}};
-    int visited[CELL_NUM][CELL_NUM] = {{false}};
-
-    DrawCircle(target.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, target.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 5.5, RED);
-
-    Queue q;
-    initQueue(&q);
-
-    int current = vec_to_index(curr);
-    enqueue(&q, current);
-    visited[(int)curr.y][(int)curr.x] = true;
-
-    while (!isEmpty(&q))
-    {
-        dequeue(&q, &current);
-
-        if (current == tint)
-        {
-            break;
-        }
-
-        curr = index_to_vec(current);
-
-        for (int i = 0; i < 4; i++)
-        {
-            Vector2 dir = directions[i];
-            int newX = (int)(curr.x + dir.x);
-            int newY = (int)(curr.y + dir.y);
-
-            if (newX >= 0 && newX < CELL_NUM && newY >= 0 && newY < CELL_NUM &&
-                !visited[newY][newX] && !towers[newY][newX])
-            {
-
-                visited[newY][newX] = true;
-                parents[newY][newX] = current;
-                enqueue(&q, vec_to_index((Vector2){newX, newY}));
-            }
-        }
-    }
-
-    Vector2 child = index_to_vec(current);
-    int parent = parents[(int)child.y][(int)child.x];
-    while (parent != cint)
-    {
-        // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
-        child = index_to_vec(parent);
-        parent = parents[(int)child.y][(int)child.x];
-    }
-
-    // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
-    return child;
 }
 
 #endif

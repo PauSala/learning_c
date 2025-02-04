@@ -85,6 +85,12 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         return;
     }
 
+    if (t->target != NULL && !(CheckCollisionCircles(t->center, t->range, t->target->center, t->target->radius)))
+    {
+        t->target = NULL;
+        t->shooting = false;
+    }
+
     // Found enemy if target is null
     if (t->target == NULL)
     {
@@ -127,7 +133,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         }
     }
 
-    if (t->time_passed >= t->velocity && t->shooting == false)
+    if (t->time_passed >= t->velocity)
     {
         t->shooting = true;
         t->time_passed = 0.0;
@@ -139,7 +145,6 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
 
 #define CANON 5.0f
 #define TOWER_RADIUS (float)CELL_SIZE / 4.0
-
 void tower_draw(Tower *t)
 {
     // TODO: calculate this once at tower update
@@ -152,14 +157,15 @@ void tower_draw(Tower *t)
     }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
-    DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3, BORANGE);
+    DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3.0, BORANGE);
 }
 
+#define PROJECTILE_LEN 4.0f
 void projectile_draw(Tower *t)
 {
     if (t->shooting && t->time_passed * PROJECTILE_DELTA >= TOWER_RADIUS + CANON)
     {
-        Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, (t->time_passed * PROJECTILE_DELTA) - 4.0);
+        Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, (t->time_passed * PROJECTILE_DELTA) - PROJECTILE_LEN);
         Vector2 p = get_circle_center_from_origin(t->center, t->target->center, t->time_passed * PROJECTILE_DELTA);
         DrawLineEx(p, p1, 1.0, TORANGE);
     }
@@ -183,7 +189,7 @@ void explosion_update(Explosion *e)
 
     if (e->origin)
     {
-        e->target->resistance -= e->origin->power;
+        e->target->life -= e->origin->power;
     }
 }
 

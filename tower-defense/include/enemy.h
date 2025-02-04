@@ -6,7 +6,7 @@
 #include "ds.h"
 #include "display.h"
 
-#define MAX_ENEMIES 2
+#define MAX_ENEMIES 10
 
 typedef enum
 {
@@ -22,6 +22,7 @@ typedef struct
     Vector2 center;
     Vector2 direction;
     float velocity;
+    float life;
     float resistance;
     Vector2 target;
     bool to_remove;
@@ -38,8 +39,9 @@ Enemy *enemy_create(Vector2 center)
     e->ty = E1;
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
-    e->resistance = 100;
-    e->velocity = 0.5;
+    e->life = 30;
+    e->resistance = e->life;
+    e->velocity = 0.3;
     e->radius = 5.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
@@ -65,7 +67,7 @@ void enemy_group(DynamicArray *enemies)
 
 void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
 {
-    if (e->resistance <= 0)
+    if (e->life <= 0)
     {
         e->to_remove = true;
         return;
@@ -193,8 +195,8 @@ void enemy_draw(Enemy *e)
 {
     DrawRotatedTriangle(e->center, e->direction, 5.5);
 
-    int y = (float)20 * e->resistance / 100.0;
-    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 3, TPINK);
+    int y = (float)20 * e->life / e->resistance;
+    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 1, TPINK);
 }
 
 #endif

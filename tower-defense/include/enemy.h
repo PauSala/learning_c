@@ -68,7 +68,6 @@ void enemy_update(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     if (e->resistance <= 0)
     {
         e->to_remove = true;
-        printf("To remove!\n");
         return;
     }
 

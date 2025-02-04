@@ -81,7 +81,6 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
     // Target is scheduled for delete
     if (t->target != NULL && t->target->to_remove)
     {
-        printf("Target is null now\n");
         t->target = NULL;
         return;
     }

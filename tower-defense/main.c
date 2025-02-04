@@ -51,7 +51,6 @@ int main(void)
             Enemy *e = enemies->data[i];
             if (e->to_remove)
             {
-                printf("Removing target!\n");
                 dynamic_array_remove(enemies, i);
                 free(e);
             }

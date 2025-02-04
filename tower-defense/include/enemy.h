@@ -186,7 +186,6 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
         vertices[i] = RotatePoint(vertices[i], center, angle);
     }
 
-    // Draw the triangle
     DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
 }
 

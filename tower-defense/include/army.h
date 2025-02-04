@@ -23,6 +23,7 @@ typedef struct
     TowerT ty;
     float range;
     Vector2 center;
+    Vector2 last_direction;
     Enemy *target;
     float target_dist;
     bool shooting;
@@ -62,9 +63,10 @@ Tower *tower_create(Vector2 center)
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 5.0;
+    t->velocity = 0.02;
     t->power = 0.1;
     t->cost = 20;
+    t->last_direction = (Vector2){0.0, 0.0};
     return t;
 }
 
@@ -110,6 +112,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
     }
 
     t->target_dist = Vector2Distance(t->center, t->target->center);
+    t->last_direction = t->target->center;
 
     if (!t->explosion_send)
     {
@@ -133,14 +136,14 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         }
     }
 
-    if (t->time_passed >= t->velocity)
+    if (t->time_passed >= t->velocity && !t->shooting)
     {
         t->shooting = true;
         t->time_passed = 0.0;
         t->explosion_send = false;
     }
 
-    t->time_passed += GetFrameTime();
+    t->time_passed += GetFrameTime() + t->velocity;
 }
 
 #define CANON 5.0f
@@ -155,9 +158,16 @@ void tower_draw(Tower *t)
         DrawLineEx(p1, p2, 3.0, TBLUE);
         projectile_draw(t);
     }
+    else
+    {
+        Vector2 p1 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS);
+        Vector2 p2 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS + CANON);
+        DrawLineEx(p1, p2, 3.0, TBLUE);
+    }
     // Draw tower
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS, TBLUE);
     DrawCircleLines(t->center.x, t->center.y, TOWER_RADIUS - 3.0, BORANGE);
+    // DrawCircleLines(t->center.x, t->center.y, t->range, LORANGE);
 }
 
 #define PROJECTILE_LEN 4.0f

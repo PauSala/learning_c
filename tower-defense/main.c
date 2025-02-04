@@ -85,20 +85,19 @@ int main(void)
         }
 
         // Explosions
-        size_t j = 0;
-        while (j < explosions->size)
+        i = 0;
+        while (i < explosions->size)
         {
-            Explosion *e = explosions->data[j];
+            Explosion *e = explosions->data[i];
             if (e->to_remove)
             {
-                printf("Explosion remove!\n");
-                dynamic_array_remove(explosions, j);
+                dynamic_array_remove(explosions, i);
                 free(e);
             }
             else
             {
                 explosion_update(e);
-                j++;
+                i++;
             }
         }
 
@@ -113,14 +112,14 @@ int main(void)
         DrawRectangle(SCREEN_HEIGHT, 0, SCREEN_WIDTH, SCREEN_HEIGHT, UI_BG_COLOR);
 
         // Auxiliar grid
-        // draw_grid();
+        draw_grid();
 
         // Draw mouse outline
-        if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
-        {
-            Vector2 g = grid_snap(&mousep);
-            DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, TWHITE);
-        }
+        // if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
+        // {
+        //     Vector2 g = grid_snap(&mousep);
+        //     DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
+        // }
         //
 
         // Towers
@@ -133,13 +132,12 @@ int main(void)
         }
 
         // Explosions
-
-        j = 0;
-        while (j < explosions->size)
+        i = 0;
+        while (i < explosions->size)
         {
-            Explosion *e = explosions->data[j];
+            Explosion *e = explosions->data[i];
             explosion_draw(e);
-            j++;
+            i++;
         }
 
         // Enemies
@@ -148,6 +146,10 @@ int main(void)
         {
             Enemy *e = enemies->data[i];
             enemy_draw(e);
+            // if (CheckCollisionPointCircle(mousep, e->center, e->radius))
+            // {
+            //     enemy_life_draw(e);
+            // }
             i++;
         }
 
@@ -167,7 +169,7 @@ void draw_grid(void)
 {
     for (int i = 0; i < CELL_NUM * CELL_SIZE + 1; i += CELL_SIZE)
     {
-        DrawLine(i, 0, i, SCREEN_HEIGHT, TWHITE);
-        DrawLine(0, i, PG_SIZE, i, TWHITE);
+        DrawLineEx((Vector2){i, 0}, (Vector2){i, SCREEN_HEIGHT}, 0.3, TWHITE);
+        DrawLineEx((Vector2){0, i}, (Vector2){PG_SIZE, i}, 1.0, TWHITE);
     }
 }

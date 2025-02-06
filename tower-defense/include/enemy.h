@@ -194,7 +194,7 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
 void enemy_draw(Enemy *e)
 {
     DrawRotatedTriangle(e->center, e->direction, 5.5);
-    enemy_life_draw(e);
+    // enemy_life_draw(e);
 }
 
 void enemy_life_draw(Enemy *e)

@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include <stdlib.h>
+#include <limits.h>
 #include "display.h"
 #include "enemy.h"
 
@@ -142,14 +143,19 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
     // Found enemy if target is null
     if (t->target == NULL)
     {
+        float min_dist = INT_MAX;
         for (size_t i = 0; i < enemies->size; i++)
         {
             Enemy *e = enemies->data[i];
             // TODO: found nearest target
             if (!e->to_remove)
             {
-                t->target = e;
-                break;
+                float d = Vector2Distance(e->center, t->center);
+                if (d < min_dist)
+                {
+                    t->target = e;
+                    min_dist = d;
+                }
             }
         }
         if (t->target == NULL)

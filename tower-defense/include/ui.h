@@ -42,7 +42,7 @@ void update_tower_icon(TowerIcon *i, TowerIcon *i1, TowerIcon *i2, Vector2 mouse
 
 void draw_tower_icon(TowerIcon *i, Color c)
 {
-    Color color = (Color){255, 245, 230, 255};
+    Color color = (Color){255, 255, 255, 255};
     if (!i->active)
     {
         color = c;

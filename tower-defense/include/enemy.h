@@ -6,7 +6,7 @@
 #include "ds.h"
 #include "display.h"
 
-#define MAX_ENEMIES 10
+#define MAX_ENEMIES 20
 
 typedef enum
 {
@@ -41,9 +41,9 @@ Enemy *enemy_create(Vector2 center)
     e->ty = E1;
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
-    e->life = 50;
+    e->life = 150;
     e->resistance = e->life;
-    e->velocity = 0.2;
+    e->velocity = 0.3;
     e->radius = 7.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;

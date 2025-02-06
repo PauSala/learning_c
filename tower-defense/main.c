@@ -159,23 +159,39 @@ int main(void)
         Vector2 tpos = MeasureTextEx(GetFontDefault(), "Available Towers", 12, 1.0);
         DrawText("Available Towers", PG_SIZE + margin + (width - tpos.x) / 2.0, tmargin, 12, TORANGE);
 
-        draw_tower_icon(&iconA, BORANGE);
-        draw_tower_icon(&iconB, BGREEN);
-        draw_tower_icon(&iconC, BVIOLET);
+        draw_tower_icon(&iconA, MORANGE);
+        draw_tower_icon(&iconB, MGREEN);
+        draw_tower_icon(&iconC, MVIOLET);
 
         // Auxiliar grid
         draw_grid();
 
         // Draw mouse outline
-        // if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
-        // {
-        //     Vector2 g = grid_snap(&mousep);
-        //     DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
-        // }
-        //
+        if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
+        {
+            Vector2 g = grid_snap(&mousep);
+            DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
+            if (iconA.active)
+            {
+                tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MORANGE);
+            }
+            if (iconB.active)
+            {
+                tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MGREEN);
+            }
+            if (iconC.active)
+            {
+                tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MVIOLET);
+            }
+        }
 
         // Playground
         draw_playground(army, explosions, enemies, mousep);
+
+        if (enemies->size == 0)
+        {
+            DrawText("WELL DONE!", PG_SIZE / 2, SCREEN_HEIGHT / 2, 20, RAYWHITE);
+        }
 
         EndDrawing();
         //----------------------------------------------------------------------------------

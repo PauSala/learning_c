@@ -228,7 +228,7 @@ void tower_draw(Tower *t)
 void tower_a_draw(Vector2 p1, Color c)
 {
     DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, c);
-    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS - 3.0, c, BG_COLOR);
+    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, c);
 }
 
 void tower_b_draw(Vector2 p1, Color c)

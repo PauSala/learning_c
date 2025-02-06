@@ -32,6 +32,7 @@ typedef struct
     float velocity;
     float power;
     int cost;
+    Color color;
 
 } Tower;
 
@@ -45,17 +46,20 @@ typedef struct
 
 } Explosion;
 
-Tower *tower_create(Vector2 center);
+Tower *tower_a_create(Vector2 center);
+Tower *tower_b_create(Vector2 center);
+Tower *tower_c_create(Vector2 center);
+
 void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies);
 void tower_draw(Tower *tower);
-void tower_a_draw(Vector2 p1);
-void tower_b_draw(Vector2 p1);
-void tower_c_draw(Vector2 p1);
+void tower_a_draw(Vector2 p1, Color c);
+void tower_b_draw(Vector2 p1, Color c);
+void tower_c_draw(Vector2 p1, Color c);
 void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
 
-Tower *tower_create(Vector2 center)
+Tower *tower_a_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = A;
@@ -70,6 +74,45 @@ Tower *tower_create(Vector2 center)
     t->power = 0.1;
     t->cost = 20;
     t->last_direction = (Vector2){0.0, 0.0};
+    t->color = BORANGE;
+    return t;
+}
+
+Tower *tower_b_create(Vector2 center)
+{
+    Tower *t = (Tower *)malloc(sizeof(Tower));
+    t->ty = B;
+    t->range = 50.0;
+    t->center = center;
+    t->target = NULL;
+    t->target_dist = 0.0;
+    t->shooting = true;
+    t->explosion_send = false;
+    t->time_passed = 0.0;
+    t->velocity = 0.01;
+    t->power = 0.4;
+    t->cost = 40;
+    t->last_direction = (Vector2){0.0, 0.0};
+    t->color = BGREEN;
+    return t;
+}
+
+Tower *tower_c_create(Vector2 center)
+{
+    Tower *t = (Tower *)malloc(sizeof(Tower));
+    t->ty = C;
+    t->range = 50.0;
+    t->center = center;
+    t->target = NULL;
+    t->target_dist = 0.0;
+    t->shooting = true;
+    t->explosion_send = false;
+    t->time_passed = 0.0;
+    t->velocity = 0.05;
+    t->power = 0.2;
+    t->cost = 50;
+    t->last_direction = (Vector2){0.0, 0.0};
+    t->color = BVIOLET;
     return t;
 }
 
@@ -102,7 +145,8 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         for (size_t i = 0; i < enemies->size; i++)
         {
             Enemy *e = enemies->data[i];
-            if (!e->to_remove && (t->center, t->range, e->center, e->radius))
+            // TODO: found nearest target
+            if (!e->to_remove)
             {
                 t->target = e;
                 break;
@@ -154,34 +198,52 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
 
 void tower_draw(Tower *t)
 {
+
+    // Draw tower
+    switch (t->ty)
+    {
+    case A:
+        tower_a_draw(t->center, t->color);
+        break;
+    case B:
+        tower_b_draw(t->center, t->color);
+        break;
+    case C:
+        tower_c_draw(t->center, t->color);
+        break;
+
+    default:
+        break;
+    }
+
     // TODO: calculate this once at tower update
     if (t->target != NULL)
     {
         Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, TOWER_RADIUS);
         Vector2 p2 = get_circle_center_from_origin(t->center, t->target->center, TOWER_RADIUS + CANON);
-        DrawLineEx(p1, p2, 3.0, BORANGE);
+        DrawLineEx(p1, p2, 3.0, t->color);
         projectile_draw(t);
     }
     else
     {
         Vector2 p1 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS);
         Vector2 p2 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS + CANON);
-        DrawLineEx(p1, p2, 3.0, BORANGE);
+        DrawLineEx(p1, p2, 3.0, t->color);
     }
-    // Draw tower
-    tower_a_draw(t->center);
+    // Draw range
+    // DrawCircleLinesV(t->center, t->range, t->color);
 }
 
-void tower_a_draw(Vector2 p1)
+void tower_a_draw(Vector2 p1, Color c)
 {
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, BORANGE);
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, BORANGE);
+    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, c);
+    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, c);
 }
 
-void tower_b_draw(Vector2 p1)
+void tower_b_draw(Vector2 p1, Color c)
 {
     float radius = TOWER_RADIUS;
-    DrawCircleLines(p1.x, p1.y, radius, BORANGE);
+    DrawCircleLines(p1.x, p1.y, radius, c);
 
     float scale_factor = 0.8f;
     float inner_radius = radius * scale_factor;
@@ -190,15 +252,15 @@ void tower_b_draw(Vector2 p1)
     Vector2 v2 = {p1.x - inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
     Vector2 v3 = {p1.x + inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
 
-    DrawTriangleLines(v1, v2, v3, BORANGE);
+    DrawTriangleLines(v1, v2, v3, c);
 }
 
-void tower_c_draw(Vector2 p1)
+void tower_c_draw(Vector2 p1, Color c)
 {
     float radius = TOWER_RADIUS;
-    DrawCircleLines(p1.x, p1.y, radius - 2.0, BORANGE);
+    DrawCircleLines(p1.x, p1.y, radius - 2.0, c);
 
-    DrawRectangleLinesEx((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, 1.0, BORANGE);
+    DrawRectangleLinesEx((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, 1.0, c);
 }
 
 #define PROJECTILE_LEN 4.0f

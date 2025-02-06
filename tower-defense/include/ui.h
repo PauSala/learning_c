@@ -47,17 +47,18 @@ void draw_tower_icon(TowerIcon *i, Color c)
     {
         color = c;
     }
-    switch (i->ty)
-    {
-    case A:
-        tower_a_draw((Vector2){i->x, i->y}, color);
-        break;
-    case B:
-        tower_b_draw((Vector2){i->x, i->y}, color);
-        break;
-    case C:
-        tower_c_draw((Vector2){i->x, i->y}, color);
-    }
+    tower_a_draw((Vector2){i->x, i->y}, color);
+    // switch (i->ty)
+    // {
+    // case A:
+    //     tower_a_draw((Vector2){i->x, i->y}, color);
+    //     break;
+    // case B:
+    //     tower_b_draw((Vector2){i->x, i->y}, color);
+    //     break;
+    // case C:
+    //     tower_c_draw((Vector2){i->x, i->y}, color);
+    // }
 }
 
 #endif

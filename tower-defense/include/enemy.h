@@ -41,10 +41,10 @@ Enemy *enemy_create(Vector2 center)
     e->ty = E1;
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
-    e->life = 30;
+    e->life = 50;
     e->resistance = e->life;
     e->velocity = 0.2;
-    e->radius = 5.0;
+    e->radius = 7.0;
     e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
 
@@ -59,7 +59,7 @@ void enemy_group(DynamicArray *enemies)
     }
     for (int i = 0; i < MAX_ENEMIES / 2; i++)
     {
-        float x = (float)i * (float)CELL_SIZE / 3.0 + (float)CELL_SIZE / 2.0;
+        float x = (float)i * (float)CELL_SIZE / 2.0 + (float)CELL_SIZE / 2.0;
         Enemy *enemy1 = enemy_create((Vector2){x, 0.0 + (float)CELL_SIZE / 4.0});
         Enemy *enemy2 = enemy_create((Vector2){x, (float)CELL_SIZE + (float)CELL_SIZE / 4.0});
         dynamic_array_add(enemies, enemy1);
@@ -188,13 +188,12 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
         vertices[i] = RotatePoint(vertices[i], center, angle);
     }
 
-    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
+    DrawTriangleLines(vertices[0], vertices[1], vertices[2], TPINK);
 }
 
 void enemy_draw(Enemy *e)
 {
-    DrawRotatedTriangle(e->center, e->direction, 5.5);
-    enemy_life_draw(e);
+    DrawRotatedTriangle(e->center, e->direction, 7.0);
 }
 
 void enemy_life_draw(Enemy *e)

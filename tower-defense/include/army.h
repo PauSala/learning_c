@@ -72,7 +72,7 @@ Tower *tower_a_create(Vector2 center)
     t->explosion_send = false;
     t->time_passed = 0.0;
     t->velocity = 0.02;
-    t->power = 0.1;
+    t->power = 0.02;
     t->cost = 20;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BORANGE;
@@ -205,22 +205,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
 void tower_draw(Tower *t)
 {
 
-    // Draw tower
-    switch (t->ty)
-    {
-    case A:
-        tower_a_draw(t->center, t->color);
-        break;
-    case B:
-        tower_b_draw(t->center, t->color);
-        break;
-    case C:
-        tower_c_draw(t->center, t->color);
-        break;
-
-    default:
-        break;
-    }
+    tower_a_draw(t->center, t->color);
 
     // TODO: calculate this once at tower update
     if (t->target != NULL)
@@ -243,13 +228,13 @@ void tower_draw(Tower *t)
 void tower_a_draw(Vector2 p1, Color c)
 {
     DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, c);
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, c);
+    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS - 3.0, c, BG_COLOR);
 }
 
 void tower_b_draw(Vector2 p1, Color c)
 {
     float radius = TOWER_RADIUS;
-    DrawCircleLines(p1.x, p1.y, radius, c);
+    DrawCircle(p1.x, p1.y, radius, c);
 
     float scale_factor = 0.8f;
     float inner_radius = radius * scale_factor;
@@ -258,15 +243,14 @@ void tower_b_draw(Vector2 p1, Color c)
     Vector2 v2 = {p1.x - inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
     Vector2 v3 = {p1.x + inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
 
-    DrawTriangleLines(v1, v2, v3, c);
+    DrawTriangle(v1, v2, v3, BG_COLOR);
 }
 
 void tower_c_draw(Vector2 p1, Color c)
 {
     float radius = TOWER_RADIUS;
+    DrawRectangleRec((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, c);
     DrawCircleLines(p1.x, p1.y, radius - 2.0, c);
-
-    DrawRectangleLinesEx((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, 1.0, c);
 }
 
 #define PROJECTILE_LEN 4.0f

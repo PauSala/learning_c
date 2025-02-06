@@ -8,8 +8,7 @@
 #include "./include/ui.h"
 
 void draw_grid(void);
-void draw_ui(void);
-void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies);
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies, Vector2 mousep);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -34,7 +33,7 @@ int main(void)
     // Icons
 
     float pos = icon_container.x + tmargin + (float)CELL_SIZE / 2.0;
-    TowerIcon iconA = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = true, .hover = false, .ty = A};
+    TowerIcon iconA = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = A};
 
     pos += CELL_SIZE + tmargin;
     TowerIcon iconB = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = B};
@@ -176,7 +175,7 @@ int main(void)
         //
 
         // Playground
-        draw_playground(army, explosions, enemies);
+        draw_playground(army, explosions, enemies, mousep);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -199,7 +198,7 @@ void draw_grid(void)
     }
 }
 
-void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies)
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies, Vector2 mousep)
 {
 
     // Towers
@@ -226,6 +225,10 @@ void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray 
     {
         Enemy *e = enemies->data[i];
         enemy_draw(e);
+        if (CheckCollisionPointCircle(mousep, e->center, e->radius))
+        {
+            enemy_life_draw(e);
+        }
         i++;
     }
 }

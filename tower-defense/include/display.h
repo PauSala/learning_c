@@ -19,14 +19,15 @@
 #define UI_WIDGET_COLOR (Color){41, 41, 41, 255}
 
 #define TWHITE (Color){250, 250, 250, 20}
-#define TPINK (Color){255, 153, 255, 200}
 #define TRED (Color){230, 41, 55, 150}
 #define TORANGE (Color){235, 173, 103, 200}
 
+// Enemy color
+#define TPINK (Color){255, 255, 153, 200}
 // Towers colors
-#define BORANGE (Color){255, 179, 102, 175}
-#define BGREEN (Color){204, 255, 102, 175}
-#define BVIOLET (Color){255, 153, 255, 175}
+#define BORANGE (Color){153, 255, 204, 255}
+#define BGREEN (Color){51, 133, 255, 255}
+#define BVIOLET (Color){255, 204, 255, 255}
 
 #define TBLUE (Color){65, 213, 232, 200}
 #define TBLUE_LIGHT (Color){51, 204, 255, 100}

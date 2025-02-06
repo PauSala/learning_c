@@ -170,18 +170,21 @@ int main(void)
         if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
         {
             Vector2 g = grid_snap(&mousep);
-            DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
+            // DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
             if (iconA.active)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MORANGE);
+                DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TA_RANGE, MORANGE);
             }
             if (iconB.active)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MGREEN);
+                DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TB_RANGE, MGREEN);
             }
             if (iconC.active)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MVIOLET);
+                DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TC_RANGE, MVIOLET);
             }
         }
 

@@ -25,13 +25,14 @@
 // Enemy color
 #define TPINK (Color){255, 255, 153, 200}
 // Towers colors
-#define BORANGE (Color){203, 87, 230, 200}
-#define BGREEN (Color){88, 222, 224, 200}
-#define BVIOLET (Color){224, 206, 88, 200}
+#define BORANGE (Color){52, 162, 235, 200}
+#define MORANGE (Color){52, 162, 235, 100}
 
-#define MORANGE (Color){203, 87, 230, 100}
-#define MGREEN (Color){88, 222, 224, 100}
-#define MVIOLET (Color){224, 206, 88, 100}
+#define BGREEN (Color){255, 255, 255, 255}
+#define MGREEN (Color){255, 255, 255, 255}
+
+#define BVIOLET (Color){224, 82, 227, 200}
+#define MVIOLET (Color){224, 82, 227, 100}
 
 #define TBLUE (Color){65, 213, 232, 200}
 #define TBLUE_LIGHT (Color){51, 204, 255, 100}

@@ -45,7 +45,7 @@ Enemy *enemy_create(Vector2 center)
     e->resistance = e->life;
     e->velocity = 0.3;
     e->radius = 7.0;
-    e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
+    e->target = (Vector2){PG_SIZE - 1, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
 
     return e;
@@ -147,12 +147,10 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     int parent = parents[(int)child.y][(int)child.x];
     while (parent != cint)
     {
-        // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
         child = index_to_vec(parent);
         parent = parents[(int)child.y][(int)child.x];
     }
 
-    // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
     return child;
 }
 
@@ -174,7 +172,7 @@ Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
     return point;
 }
 
-void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
+void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size, Color c)
 {
     Vector2 vertices[3] = {
         {center.x, center.y + size},
@@ -188,12 +186,13 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
         vertices[i] = RotatePoint(vertices[i], center, angle);
     }
 
-    DrawTriangleLines(vertices[0], vertices[1], vertices[2], TPINK);
+    DrawTriangleLines(vertices[0], vertices[1], vertices[2], c);
 }
 
 void enemy_draw(Enemy *e)
 {
-    DrawRotatedTriangle(e->center, e->direction, 7.0);
+    DrawRotatedTriangle(e->center, e->direction, 7.0, TPINK);
+    // DrawRotatedTriangle(e->center, e->direction, 4.0, TBLUE_LIGHT);
 }
 
 void enemy_life_draw(Enemy *e)

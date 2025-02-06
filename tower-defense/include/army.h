@@ -60,11 +60,15 @@ void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
 
+#define TA_RANGE 90
+#define TB_RANGE 70
+#define TC_RANGE 50
+
 Tower *tower_a_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = A;
-    t->range = 100.0;
+    t->range = TA_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
@@ -83,7 +87,7 @@ Tower *tower_b_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = B;
-    t->range = 50.0;
+    t->range = TB_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
@@ -102,7 +106,7 @@ Tower *tower_c_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = C;
-    t->range = 50.0;
+    t->range = TC_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
@@ -227,8 +231,8 @@ void tower_draw(Tower *t)
 
 void tower_a_draw(Vector2 p1, Color c)
 {
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, c);
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, c);
+    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS, c, (Color){c.r, c.g, c.b, 50});
+    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS - 3.0, c, (Color){c.r, c.g, c.b, 50});
 }
 
 void tower_b_draw(Vector2 p1, Color c)
@@ -292,8 +296,8 @@ void explosion_draw(Explosion *e)
     {
         return;
     }
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 20}, BG_COLOR);
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 20}, BG_COLOR);
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 2, (Color){235, 161, 0, 50}, (Color){235, 161, 0, 20});
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 50}, BG_COLOR);
 }
 
 #endif

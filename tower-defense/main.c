@@ -18,36 +18,15 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    // UI stuff, move to another file -----
-
-    // Select tower
-    float margin = 12.0;
-    float width = (SCREEN_WIDTH - PG_SIZE) - margin * 2;
-    float height = 70.0;
-    Rectangle icon_container = (Rectangle){PG_SIZE + margin, margin, width, height};
-
-    // Tower icons
-    float icons_x_line = 3.0;
-    float tmargin = (width - icons_x_line * CELL_SIZE) / (icons_x_line + 1);
-
-    // Icons
-
-    float pos = icon_container.x + tmargin + (float)CELL_SIZE / 2.0;
-    TowerIcon iconA = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = A};
-
-    pos += CELL_SIZE + tmargin;
-    TowerIcon iconB = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = B};
-
-    pos += CELL_SIZE + tmargin;
-    TowerIcon iconC = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = C};
-
-    //-- end ui stuff
-
     const int screenWidth = SCREEN_WIDTH;
     const int screenHeight = SCREEN_HEIGHT;
-    DynamicArray *army = create_dynamic_array(200);            // TODO: put max in a constant
-    DynamicArray *explosions = create_dynamic_array(200);      // TODO: put max in a constant
-    DynamicArray *enemies = create_dynamic_array(MAX_ENEMIES); // TODO: put max in a constant
+    DynamicArray *army = create_dynamic_array(200);       // TODO: put max in a constant
+    DynamicArray *explosions = create_dynamic_array(200); // TODO: put max in a constant
+    DynamicArray *enemies = create_dynamic_array(MAX_ENEMIES);
+
+    // UI
+    TowerIconWidget tiw = init_tower_icon_widget();
+    //-- end ui
 
     enemy_group(enemies);
 
@@ -75,7 +54,8 @@ int main(void)
         Vector2 mousep = GetMousePosition();
 
         // Ui
-        update_tower_icon(&iconA, &iconB, &iconC, mousep, is_mouse_button_pressed_left);
+        // update_tower_icon(&tiw.ticonA, &tiw.ticonB, &tiw.ticonC, mousep, is_mouse_button_pressed_left);
+        update_tower_icon_widget(&tiw, is_mouse_button_pressed_left, mousep);
 
         // Enemies
         size_t i = 0;
@@ -102,15 +82,15 @@ int main(void)
             if (!towers[(int)grid_pos.y][(int)grid_pos.x])
             {
                 Tower *t = NULL;
-                if (iconA.active)
+                if (tiw.selected & ICON_A_SELECTED)
                 {
                     t = tower_a_create(mouse_to_grid_center(&mousep));
                 }
-                if (iconB.active)
+                if (tiw.selected & ICON_B_SELECTED)
                 {
                     t = tower_b_create(mouse_to_grid_center(&mousep));
                 }
-                if (iconC.active)
+                if (tiw.selected & ICON_C_SELECTED)
                 {
                     t = tower_c_create(mouse_to_grid_center(&mousep));
                 }
@@ -155,13 +135,7 @@ int main(void)
         ClearBackground(BG_COLOR);
 
         // UI --
-        DrawRectangleRounded(icon_container, 0.1, 4, UI_WIDGET_COLOR);
-        Vector2 tpos = MeasureTextEx(GetFontDefault(), "Available Towers", 12, 1.0);
-        DrawText("Available Towers", PG_SIZE + margin + (width - tpos.x) / 2.0, tmargin, 12, TORANGE);
-
-        draw_tower_icon(&iconA, MORANGE);
-        draw_tower_icon(&iconB, MGREEN);
-        draw_tower_icon(&iconC, MVIOLET);
+        draw_tower_icon_widget(&tiw);
 
         // Auxiliar grid
         draw_grid();
@@ -171,17 +145,17 @@ int main(void)
         {
             Vector2 g = grid_snap(&mousep);
             // DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
-            if (iconA.active)
+            if (tiw.selected & ICON_A_SELECTED)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MORANGE);
                 DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TA_RANGE, MORANGE);
             }
-            if (iconB.active)
+            if (tiw.selected & ICON_B_SELECTED)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MGREEN);
                 DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TB_RANGE, MGREEN);
             }
-            if (iconC.active)
+            if (tiw.selected & ICON_C_SELECTED)
             {
                 tower_a_draw((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, MVIOLET);
                 DrawCircleLinesV((Vector2){g.x + CELL_SIZE / 2, g.y + CELL_SIZE / 2}, TC_RANGE, MVIOLET);

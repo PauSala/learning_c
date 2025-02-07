@@ -54,8 +54,6 @@ Tower *tower_c_create(Vector2 center);
 void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies);
 void tower_draw(Tower *tower);
 void tower_a_draw(Vector2 p1, Color c);
-void tower_b_draw(Vector2 p1, Color c);
-void tower_c_draw(Vector2 p1, Color c);
 void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
@@ -233,28 +231,6 @@ void tower_a_draw(Vector2 p1, Color c)
 {
     DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS, c, (Color){c.r, c.g, c.b, 50});
     DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS - 3.0, c, (Color){c.r, c.g, c.b, 50});
-}
-
-void tower_b_draw(Vector2 p1, Color c)
-{
-    float radius = TOWER_RADIUS;
-    DrawCircle(p1.x, p1.y, radius, c);
-
-    float scale_factor = 0.8f;
-    float inner_radius = radius * scale_factor;
-
-    Vector2 v1 = {p1.x, p1.y - inner_radius};
-    Vector2 v2 = {p1.x - inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
-    Vector2 v3 = {p1.x + inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
-
-    DrawTriangle(v1, v2, v3, BG_COLOR);
-}
-
-void tower_c_draw(Vector2 p1, Color c)
-{
-    float radius = TOWER_RADIUS;
-    DrawRectangleRec((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, c);
-    DrawCircleLines(p1.x, p1.y, radius - 2.0, c);
 }
 
 #define PROJECTILE_LEN 4.0f

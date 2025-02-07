@@ -29,7 +29,7 @@
 #define MORANGE (Color){52, 162, 235, 100}
 
 #define BGREEN (Color){255, 255, 255, 255}
-#define MGREEN (Color){255, 255, 255, 255}
+#define MGREEN (Color){255, 255, 255, 100}
 
 #define BVIOLET (Color){224, 82, 227, 200}
 #define MVIOLET (Color){224, 82, 227, 100}

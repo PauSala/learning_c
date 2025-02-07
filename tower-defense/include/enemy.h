@@ -191,14 +191,14 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size, Color c)
 
 void enemy_draw(Enemy *e)
 {
-    DrawRotatedTriangle(e->center, e->direction, 7.0, TPINK);
-    // DrawRotatedTriangle(e->center, e->direction, 4.0, TBLUE_LIGHT);
+    DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 8.0, TYELLOW);
+    // DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 4.0, TBLUE_LIGHT);
 }
 
 void enemy_life_draw(Enemy *e)
 {
     int y = (float)20 * e->life / e->resistance;
-    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 1, TPINK);
+    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 1, TYELLOW);
 }
 
 #endif

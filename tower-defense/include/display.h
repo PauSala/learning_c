@@ -17,25 +17,28 @@
 #define BG_COLOR (Color){28, 28, 28, 255}
 #define UI_BG_COLOR (Color){33, 33, 33, 255}
 #define UI_WIDGET_COLOR (Color){41, 41, 41, 255}
+#define UI_WIDGET_COLORH (Color){51, 51, 51, 255}
+#define ST_CELL (Color){47, 47, 47, 255}
 
 #define TWHITE (Color){250, 250, 250, 20}
 #define TRED (Color){230, 41, 55, 150}
 #define TORANGE (Color){235, 173, 103, 200}
 
 // Enemy color
-#define TPINK (Color){255, 255, 153, 200}
+#define TYELLOW (Color){255, 255, 153, 200}
+#define UIWHITE (Color){201, 201, 199, 200}
 // Towers colors
-#define BORANGE (Color){52, 162, 235, 200}
+#define BORANGE (Color){52, 162, 235, 240}
 #define MORANGE (Color){52, 162, 235, 100}
 
-#define BGREEN (Color){255, 255, 255, 255}
+#define BGREEN (Color){255, 255, 255, 240}
 #define MGREEN (Color){255, 255, 255, 100}
 
-#define BVIOLET (Color){224, 82, 227, 200}
-#define MVIOLET (Color){224, 82, 227, 100}
+#define BVIOLET (Color){242, 107, 233, 240}
+#define MVIOLET (Color){242, 107, 233, 100}
 
 #define TBLUE (Color){65, 213, 232, 200}
-#define TBLUE_LIGHT (Color){51, 204, 255, 100}
+#define TBLUE_LIGHT (Color){240, 127, 238, 200}
 
 Vector2 grid_snap(Vector2 *v);
 Vector2 mouse_to_grid_center(Vector2 *v);

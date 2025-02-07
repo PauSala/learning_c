@@ -62,6 +62,14 @@ void explosion_draw(Explosion *e);
 #define TB_RANGE 70
 #define TC_RANGE 50
 
+#define TA_V 0.02f
+#define TB_V 0.01f
+#define TC_V 0.05f
+
+#define TA_P 0.02f
+#define TB_P 0.4f
+#define TC_P 0.25f
+
 Tower *tower_a_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
@@ -73,9 +81,9 @@ Tower *tower_a_create(Vector2 center)
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.02;
+    t->velocity = TA_V;
     t->power = 0.02;
-    t->cost = 20;
+    t->cost = 5;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BORANGE;
     return t;
@@ -92,9 +100,9 @@ Tower *tower_b_create(Vector2 center)
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.01;
+    t->velocity = TB_V;
     t->power = 0.4;
-    t->cost = 40;
+    t->cost = 20;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BGREEN;
     return t;
@@ -111,9 +119,9 @@ Tower *tower_c_create(Vector2 center)
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.05;
-    t->power = 0.2;
-    t->cost = 50;
+    t->velocity = TC_V;
+    t->power = 0.25;
+    t->cost = 80;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BVIOLET;
     return t;

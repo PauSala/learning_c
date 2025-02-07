@@ -15,13 +15,15 @@ void update_playground(
     TowerIconWidget *tiw,
     Counter *counter,
     bool left_mouse_clicked,
+    Vector2 mousep,
+    StartButton *start_btn);
+void handle_tower_creation(
+    TowerIconWidget *tiw,
+    DynamicArray *army,
+    Counter *counter,
+    bool towers[CELL_NUM][CELL_NUM],
+    bool left_mouse_clicked,
     Vector2 mousep);
-void handle_tower_creation(TowerIconWidget *tiw,
-                           DynamicArray *army,
-                           Counter *counter,
-                           bool towers[CELL_NUM][CELL_NUM],
-                           bool left_mouse_clicked,
-                           Vector2 mousep);
 void draw_grid(void);
 void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies, Vector2 mousep);
 
@@ -75,7 +77,7 @@ int main(void)
         update_start_button(&start_btn, left_mouse_clicked, mousep);
 
         // Playground
-        update_playground(enemies, army, explosions, towers, &tiw, &counter, left_mouse_clicked, mousep);
+        update_playground(enemies, army, explosions, towers, &tiw, &counter, left_mouse_clicked, mousep, &start_btn);
 
         //----------------------------------------------------------------------------------
 
@@ -99,9 +101,14 @@ int main(void)
         // Playground
         draw_playground(army, explosions, enemies, mousep);
 
-        if (enemies->size == 0)
+        if (enemies->size == 0 && !start_btn.end_game)
         {
             DrawText("WELL DONE!", PG_SIZE / 2, SCREEN_HEIGHT / 2, 20, RAYWHITE);
+        }
+
+        if (start_btn.end_game)
+        {
+            DrawText("YOU LOSE", PG_SIZE / 2, SCREEN_HEIGHT / 2, 20, RAYWHITE);
         }
 
         EndDrawing();
@@ -124,23 +131,35 @@ void update_playground(
     TowerIconWidget *tiw,
     Counter *counter,
     bool left_mouse_clicked,
-    Vector2 mousep)
+    Vector2 mousep,
+    StartButton *start_btn)
 {
 
     // Enemies
     size_t i = 0;
-    while (i < enemies->size)
+    if (start_btn->active)
     {
-        Enemy *e = enemies->data[i];
-        if (e->to_remove)
+
+        while (i < enemies->size)
         {
-            dynamic_array_remove(enemies, i);
-            free(e);
-        }
-        else
-        {
-            enemy_update(e, towers);
-            i++;
+            Enemy *e = enemies->data[i];
+            if (CheckCollisionCircleRec(e->center, e->radius + 10, (Rectangle){.x = e->target.x, .y = e->target.y, .width = CELL_SIZE, .height = CELL_SIZE}))
+            {
+                start_btn->end_game = true;
+                e->to_remove = true;
+                // return;
+            }
+
+            if (e->to_remove)
+            {
+                dynamic_array_remove(enemies, i);
+                free(e);
+            }
+            else
+            {
+                enemy_update(e, towers);
+                i++;
+            }
         }
     }
 
@@ -163,18 +182,22 @@ void update_playground(
 
     // Explosions
     i = 0;
-    while (i < explosions->size)
+    if (start_btn->active)
     {
-        Explosion *e = explosions->data[i];
-        if (e->to_remove)
+
+        while (i < explosions->size)
         {
-            dynamic_array_remove(explosions, i);
-            free(e);
-        }
-        else
-        {
-            explosion_update(e);
-            i++;
+            Explosion *e = explosions->data[i];
+            if (e->to_remove)
+            {
+                dynamic_array_remove(explosions, i);
+                free(e);
+            }
+            else
+            {
+                explosion_update(e);
+                i++;
+            }
         }
     }
 }

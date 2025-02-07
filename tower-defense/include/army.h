@@ -158,7 +158,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         {
             Enemy *e = enemies->data[i];
             // TODO: found nearest target
-            if (!e->to_remove)
+            if (!e->to_remove && CheckCollisionCircles(t->center, t->range, e->center, e->radius))
             {
                 float d = Vector2Distance(e->center, t->center);
                 if (d < min_dist)
@@ -254,6 +254,14 @@ void projectile_draw(Tower *t)
 
 void explosion_update(Explosion *e)
 {
+    if (e->target->to_remove)
+    {
+        e->to_remove = true;
+    }
+    if (Vector2Distance(e->origin->center, e->target->center) > e->origin->range)
+    {
+        e->to_remove = true;
+    }
     e->dt += 0.3 * (float)e->direction;
     if (e->dt > EXPLOSION_DURATION)
     {

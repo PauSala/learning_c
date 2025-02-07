@@ -9,6 +9,7 @@ typedef struct
 {
     Rectangle rect;
     int active;
+    int end_game;
     int hover;
 } StartButton;
 
@@ -73,6 +74,7 @@ StartButton create_start_btn(void)
     return (StartButton){
         .active = false,
         .hover = false,
+        .end_game = false,
         .rect = rect,
     };
 }

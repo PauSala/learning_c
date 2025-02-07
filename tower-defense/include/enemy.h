@@ -43,7 +43,7 @@ Enemy *enemy_create(Vector2 center)
     e->direction = (Vector2){0.0, 1.0};
     e->life = 150;
     e->resistance = e->life;
-    e->velocity = 0.3;
+    e->velocity = 1.0;
     e->radius = 7.0;
     e->target = (Vector2){PG_SIZE - 1, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
@@ -191,7 +191,7 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size, Color c)
 
 void enemy_draw(Enemy *e)
 {
-    DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 8.0, TYELLOW);
+    DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 6.0, TYELLOW);
     // DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 4.0, TBLUE_LIGHT);
 }
 

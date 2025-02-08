@@ -13,7 +13,7 @@ A simple demo for exploring graphics in C
 
 ### [Tower defense sketch](tower-defense/README.md)
 
-A simple demo for exploring graphics in C
+A tower defense sketch to experiment with objects and litle animations
 
 ### Sudoku solver
 

@@ -11,6 +11,10 @@ Includes an `http-server` and an `http-parser`.
 
 A simple demo for exploring graphics in C
 
+### [Tower defense sketch](tower-defense/README.md)
+
+A simple demo for exploring graphics in C
+
 ### Sudoku solver
 
 A relatively fast sudoku solver.

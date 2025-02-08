@@ -47,6 +47,14 @@ typedef struct
 
 } Explosion;
 
+typedef struct
+{
+    Enemy *target;
+    Tower *origin;
+    bool to_remove;
+
+} Projectile;
+
 Tower *tower_a_create(Vector2 center);
 Tower *tower_b_create(Vector2 center);
 Tower *tower_c_create(Vector2 center);
@@ -54,26 +62,36 @@ Tower *tower_c_create(Vector2 center);
 void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies);
 void tower_draw(Tower *tower);
 void tower_a_draw(Vector2 p1, Color c);
-void tower_b_draw(Vector2 p1, Color c);
-void tower_c_draw(Vector2 p1, Color c);
 void projectile_draw(Tower *t);
 void explosion_update(Explosion *e);
 void explosion_draw(Explosion *e);
+
+#define TA_RANGE 90
+#define TB_RANGE 70
+#define TC_RANGE 50
+
+#define TA_V 0.02f
+#define TB_V 0.01f
+#define TC_V 0.05f
+
+#define TA_P 0.02f
+#define TB_P 0.4f
+#define TC_P 0.25f
 
 Tower *tower_a_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = A;
-    t->range = 100.0;
+    t->range = TA_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.02;
-    t->power = 0.1;
-    t->cost = 20;
+    t->velocity = TA_V;
+    t->power = 0.02;
+    t->cost = 5;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BORANGE;
     return t;
@@ -83,16 +101,16 @@ Tower *tower_b_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = B;
-    t->range = 50.0;
+    t->range = TB_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.01;
+    t->velocity = TB_V;
     t->power = 0.4;
-    t->cost = 40;
+    t->cost = 20;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BGREEN;
     return t;
@@ -102,16 +120,16 @@ Tower *tower_c_create(Vector2 center)
 {
     Tower *t = (Tower *)malloc(sizeof(Tower));
     t->ty = C;
-    t->range = 50.0;
+    t->range = TC_RANGE;
     t->center = center;
     t->target = NULL;
     t->target_dist = 0.0;
     t->shooting = true;
     t->explosion_send = false;
     t->time_passed = 0.0;
-    t->velocity = 0.05;
-    t->power = 0.2;
-    t->cost = 50;
+    t->velocity = TC_V;
+    t->power = 0.25;
+    t->cost = 80;
     t->last_direction = (Vector2){0.0, 0.0};
     t->color = BVIOLET;
     return t;
@@ -147,8 +165,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         for (size_t i = 0; i < enemies->size; i++)
         {
             Enemy *e = enemies->data[i];
-            // TODO: found nearest target
-            if (!e->to_remove)
+            if (!e->to_remove && CheckCollisionCircles(t->center, t->range, e->center, e->radius))
             {
                 float d = Vector2Distance(e->center, t->center);
                 if (d < min_dist)
@@ -205,22 +222,7 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
 void tower_draw(Tower *t)
 {
 
-    // Draw tower
-    switch (t->ty)
-    {
-    case A:
-        tower_a_draw(t->center, t->color);
-        break;
-    case B:
-        tower_b_draw(t->center, t->color);
-        break;
-    case C:
-        tower_c_draw(t->center, t->color);
-        break;
-
-    default:
-        break;
-    }
+    tower_a_draw(t->center, t->color);
 
     // TODO: calculate this once at tower update
     if (t->target != NULL)
@@ -236,37 +238,12 @@ void tower_draw(Tower *t)
         Vector2 p2 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS + CANON);
         DrawLineEx(p1, p2, 3.0, t->color);
     }
-    // Draw range
-    // DrawCircleLinesV(t->center, t->range, t->color);
 }
 
 void tower_a_draw(Vector2 p1, Color c)
 {
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS, c);
-    DrawCircleLines(p1.x, p1.y, TOWER_RADIUS - 3.0, c);
-}
-
-void tower_b_draw(Vector2 p1, Color c)
-{
-    float radius = TOWER_RADIUS;
-    DrawCircleLines(p1.x, p1.y, radius, c);
-
-    float scale_factor = 0.8f;
-    float inner_radius = radius * scale_factor;
-
-    Vector2 v1 = {p1.x, p1.y - inner_radius};
-    Vector2 v2 = {p1.x - inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
-    Vector2 v3 = {p1.x + inner_radius * 0.866f, p1.y + inner_radius * 0.5f};
-
-    DrawTriangleLines(v1, v2, v3, c);
-}
-
-void tower_c_draw(Vector2 p1, Color c)
-{
-    float radius = TOWER_RADIUS;
-    DrawCircleLines(p1.x, p1.y, radius - 2.0, c);
-
-    DrawRectangleLinesEx((Rectangle){(p1.x - radius), p1.y - radius, 2.0 * radius, 2.0 * radius}, 1.0, c);
+    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS, c, (Color){c.r, c.g, c.b, 50});
+    DrawCircleGradient(p1.x, p1.y, TOWER_RADIUS - 3.0, c, (Color){c.r, c.g, c.b, 50});
 }
 
 #define PROJECTILE_LEN 4.0f
@@ -276,12 +253,20 @@ void projectile_draw(Tower *t)
     {
         Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, (t->time_passed * PROJECTILE_DELTA) - PROJECTILE_LEN);
         Vector2 p = get_circle_center_from_origin(t->center, t->target->center, t->time_passed * PROJECTILE_DELTA);
-        DrawLineEx(p, p1, 1.0, TORANGE);
+        DrawLineEx(p, p1, 2.0, TORANGE);
     }
 }
 
 void explosion_update(Explosion *e)
 {
+    if (e->target->to_remove)
+    {
+        e->to_remove = true;
+    }
+    if (Vector2Distance(e->origin->center, e->target->center) > e->origin->range)
+    {
+        e->to_remove = true;
+    }
     e->dt += 0.3 * (float)e->direction;
     if (e->dt > EXPLOSION_DURATION)
     {
@@ -308,8 +293,8 @@ void explosion_draw(Explosion *e)
     {
         return;
     }
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 3, (Color){235, 161, 0, 20}, BG_COLOR);
-    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 20}, BG_COLOR);
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA - e->dt * EXPLOSION_DELTA / 2, (Color){235, 161, 0, 50}, (Color){235, 161, 0, 20});
+    DrawCircleGradient(e->target->center.x, e->target->center.y, e->dt * EXPLOSION_DELTA, (Color){255, 50, 20, 50}, BG_COLOR);
 }
 
 #endif

@@ -7,9 +7,25 @@
 #include "./include/enemy.h"
 #include "./include/ui.h"
 
+void update_playground(
+    DynamicArray *enemies,
+    DynamicArray *army,
+    DynamicArray *explosions,
+    bool towers[CELL_NUM][CELL_NUM],
+    TowerIconWidget *tiw,
+    Counter *counter,
+    bool left_mouse_clicked,
+    Vector2 mousep,
+    StartButton *start_btn);
+void handle_tower_creation(
+    TowerIconWidget *tiw,
+    DynamicArray *army,
+    Counter *counter,
+    bool towers[CELL_NUM][CELL_NUM],
+    bool left_mouse_clicked,
+    Vector2 mousep);
 void draw_grid(void);
-void draw_ui(void);
-void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies);
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies, Vector2 mousep);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -19,36 +35,17 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    // UI stuff, move to another file -----
-
-    // Select tower
-    float margin = 12.0;
-    float width = (SCREEN_WIDTH - PG_SIZE) - margin * 2;
-    float height = 70.0;
-    Rectangle icon_container = (Rectangle){PG_SIZE + margin, margin, width, height};
-
-    // Tower icons
-    float icons_x_line = 3.0;
-    float tmargin = (width - icons_x_line * CELL_SIZE) / (icons_x_line + 1);
-
-    // Icons
-
-    float pos = icon_container.x + tmargin + (float)CELL_SIZE / 2.0;
-    TowerIcon iconA = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = true, .hover = false, .ty = A};
-
-    pos += CELL_SIZE + tmargin;
-    TowerIcon iconB = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = B};
-
-    pos += CELL_SIZE + tmargin;
-    TowerIcon iconC = (TowerIcon){.x = pos, .y = icon_container.y + 2.0 * tmargin + 4.0, .active = false, .hover = false, .ty = C};
-
-    //-- end ui stuff
-
     const int screenWidth = SCREEN_WIDTH;
     const int screenHeight = SCREEN_HEIGHT;
-    DynamicArray *army = create_dynamic_array(200);            // TODO: put max in a constant
-    DynamicArray *explosions = create_dynamic_array(200);      // TODO: put max in a constant
-    DynamicArray *enemies = create_dynamic_array(MAX_ENEMIES); // TODO: put max in a constant
+    DynamicArray *army = create_dynamic_array(200);       // TODO: put max in a constant
+    DynamicArray *explosions = create_dynamic_array(200); // TODO: put max in a constant
+    DynamicArray *enemies = create_dynamic_array(MAX_ENEMIES);
+    Counter counter = {.spend = 0.0f};
+    StartButton start_btn = create_start_btn();
+
+    // UI
+    TowerIconWidget tiw = init_tower_icon_widget();
+    //-- end ui
 
     enemy_group(enemies);
 
@@ -72,17 +69,87 @@ int main(void)
     {
         // Update
         //----------------------------------------------------------------------------------
-        bool is_mouse_button_pressed_left = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+        bool left_mouse_clicked = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
         Vector2 mousep = GetMousePosition();
 
         // Ui
-        update_tower_icon(&iconA, &iconB, &iconC, mousep, is_mouse_button_pressed_left);
+        update_tower_icon_widget(&tiw, left_mouse_clicked, mousep);
+        update_start_button(&start_btn, left_mouse_clicked, mousep);
 
-        // Enemies
-        size_t i = 0;
+        // Playground
+        update_playground(enemies, army, explosions, towers, &tiw, &counter, left_mouse_clicked, mousep, &start_btn);
+
+        //----------------------------------------------------------------------------------
+
+        // Draw
+        //----------------------------------------------------------------------------------
+        BeginDrawing();
+        ClearBackground(BG_COLOR);
+
+        // Start and end cells
+        DrawLineEx((Vector2){0.0, 0.0}, (Vector2){0.0, 2 * CELL_SIZE}, 4.0, TYELLOW);
+        DrawRectangleLines(PG_SIZE - CELL_SIZE, PG_SIZE - CELL_SIZE, CELL_SIZE, CELL_SIZE, TYELLOW);
+
+        // UI --
+        draw_tower_icon_widget(&tiw);
+        draw_tower_info(&tiw);
+        draw_counter(&counter);
+        draw_grid();
+        draw_mouse_outline(mousep, &tiw);
+        draw_start_button(&start_btn);
+
+        // Playground
+        draw_playground(army, explosions, enemies, mousep);
+
+        if (enemies->size == 0 && !start_btn.end_game)
+        {
+            DrawText("WELL DONE!", PG_SIZE / 2, SCREEN_HEIGHT / 2, 20, RAYWHITE);
+        }
+
+        if (start_btn.end_game)
+        {
+            DrawText("YOU LOSE", PG_SIZE / 2, SCREEN_HEIGHT / 2, 20, RAYWHITE);
+        }
+
+        EndDrawing();
+        //----------------------------------------------------------------------------------
+    }
+
+    // De-Initialization
+    //--------------------------------------------------------------------------------------
+    CloseWindow(); // Close window and OpenGL context
+    //--------------------------------------------------------------------------------------
+
+    return 0;
+}
+
+void update_playground(
+    DynamicArray *enemies,
+    DynamicArray *army,
+    DynamicArray *explosions,
+    bool towers[CELL_NUM][CELL_NUM],
+    TowerIconWidget *tiw,
+    Counter *counter,
+    bool left_mouse_clicked,
+    Vector2 mousep,
+    StartButton *start_btn)
+{
+
+    // Enemies
+    size_t i = 0;
+    if (start_btn->active)
+    {
+
         while (i < enemies->size)
         {
             Enemy *e = enemies->data[i];
+            if (CheckCollisionCircleRec(e->center, e->radius + 10, (Rectangle){.x = e->target.x, .y = e->target.y, .width = CELL_SIZE, .height = CELL_SIZE}))
+            {
+                start_btn->end_game = true;
+                e->to_remove = true;
+                // return;
+            }
+
             if (e->to_remove)
             {
                 dynamic_array_remove(enemies, i);
@@ -94,45 +161,30 @@ int main(void)
                 i++;
             }
         }
+    }
 
-        // Towers
-        if (is_mouse_button_pressed_left && CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
-        {
-            Vector2 center = mouse_to_grid_center(&mousep);
-            Vector2 grid_pos = world_to_grid(&center);
-            if (!towers[(int)grid_pos.y][(int)grid_pos.x])
-            {
-                Tower *t = NULL;
-                if (iconA.active)
-                {
-                    t = tower_a_create(mouse_to_grid_center(&mousep));
-                }
-                if (iconB.active)
-                {
-                    t = tower_b_create(mouse_to_grid_center(&mousep));
-                }
-                if (iconC.active)
-                {
-                    t = tower_c_create(mouse_to_grid_center(&mousep));
-                }
-                if (t != NULL)
-                {
-                    dynamic_array_add(army, t);
-                    towers[(int)grid_pos.y][(int)grid_pos.x] = true;
-                }
-            }
-        }
+    // Towers
+    handle_tower_creation(
+        tiw,
+        army,
+        counter,
+        towers,
+        left_mouse_clicked,
+        mousep);
 
-        i = 0;
-        while (i < army->size)
-        {
-            Tower *t = army->data[i];
-            tower_update(t, explosions, enemies);
-            i++;
-        }
+    i = 0;
+    while (i < army->size)
+    {
+        Tower *t = army->data[i];
+        tower_update(t, explosions, enemies);
+        i++;
+    }
 
-        // Explosions
-        i = 0;
+    // Explosions
+    i = 0;
+    if (start_btn->active)
+    {
+
         while (i < explosions->size)
         {
             Explosion *e = explosions->data[i];
@@ -147,47 +199,43 @@ int main(void)
                 i++;
             }
         }
-
-        //----------------------------------------------------------------------------------
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-        ClearBackground(BG_COLOR);
-
-        // UI --
-        DrawRectangleRounded(icon_container, 0.1, 4, UI_WIDGET_COLOR);
-        Vector2 tpos = MeasureTextEx(GetFontDefault(), "Available Towers", 12, 1.0);
-        DrawText("Available Towers", PG_SIZE + margin + (width - tpos.x) / 2.0, tmargin, 12, TORANGE);
-
-        draw_tower_icon(&iconA, BORANGE);
-        draw_tower_icon(&iconB, BGREEN);
-        draw_tower_icon(&iconC, BVIOLET);
-
-        // Auxiliar grid
-        draw_grid();
-
-        // Draw mouse outline
-        // if (CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
-        // {
-        //     Vector2 g = grid_snap(&mousep);
-        //     DrawRectangleLines(g.x, g.y, (float)CELL_SIZE, (float)CELL_SIZE, WHITE);
-        // }
-        //
-
-        // Playground
-        draw_playground(army, explosions, enemies);
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
     }
+}
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow(); // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
-    return 0;
+void handle_tower_creation(TowerIconWidget *tiw,
+                           DynamicArray *army,
+                           Counter *counter,
+                           bool towers[CELL_NUM][CELL_NUM],
+                           bool left_mouse_clicked,
+                           Vector2 mousep)
+{
+    if (left_mouse_clicked && CheckCollisionPointRec(mousep, (Rectangle){0, 0, PG_SIZE, PG_SIZE}))
+    {
+        Vector2 center = mouse_to_grid_center(&mousep);
+        Vector2 grid_pos = world_to_grid(&center);
+        if (!towers[(int)grid_pos.y][(int)grid_pos.x])
+        {
+            Tower *t = NULL;
+            if (tiw->selected & ICON_A_SELECTED)
+            {
+                t = tower_a_create(mouse_to_grid_center(&mousep));
+            }
+            if (tiw->selected & ICON_B_SELECTED)
+            {
+                t = tower_b_create(mouse_to_grid_center(&mousep));
+            }
+            if (tiw->selected & ICON_C_SELECTED)
+            {
+                t = tower_c_create(mouse_to_grid_center(&mousep));
+            }
+            if (t != NULL)
+            {
+                counter->spend += t->cost;
+                dynamic_array_add(army, t);
+                towers[(int)grid_pos.y][(int)grid_pos.x] = true;
+            }
+        }
+    }
 }
 
 void draw_grid(void)
@@ -199,7 +247,7 @@ void draw_grid(void)
     }
 }
 
-void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies)
+void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray *enemies, Vector2 mousep)
 {
 
     // Towers
@@ -226,6 +274,11 @@ void draw_playground(DynamicArray *army, DynamicArray *explosions, DynamicArray 
     {
         Enemy *e = enemies->data[i];
         enemy_draw(e);
+        // enemy_life_draw(e);
+        if (CheckCollisionPointCircle(mousep, e->center, e->radius))
+        {
+            enemy_life_draw(e);
+        }
         i++;
     }
 }

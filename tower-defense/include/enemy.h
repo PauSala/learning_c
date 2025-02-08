@@ -6,7 +6,7 @@
 #include "ds.h"
 #include "display.h"
 
-#define MAX_ENEMIES 10
+#define MAX_ENEMIES 20
 
 typedef enum
 {
@@ -41,11 +41,11 @@ Enemy *enemy_create(Vector2 center)
     e->ty = E1;
     e->center = center;
     e->direction = (Vector2){0.0, 1.0};
-    e->life = 30;
+    e->life = 150;
     e->resistance = e->life;
-    e->velocity = 0.2;
-    e->radius = 5.0;
-    e->target = (Vector2){PG_SIZE / 2, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
+    e->velocity = 0.5;
+    e->radius = 7.0;
+    e->target = (Vector2){PG_SIZE - 1, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
 
     return e;
@@ -59,9 +59,9 @@ void enemy_group(DynamicArray *enemies)
     }
     for (int i = 0; i < MAX_ENEMIES / 2; i++)
     {
-        float x = (float)i * (float)CELL_SIZE / 3.0 + (float)CELL_SIZE / 2.0;
-        Enemy *enemy1 = enemy_create((Vector2){x, 0.0 + (float)CELL_SIZE / 4.0});
-        Enemy *enemy2 = enemy_create((Vector2){x, (float)CELL_SIZE + (float)CELL_SIZE / 4.0});
+        float x = (float)i * (float)CELL_SIZE / 2.0 + (float)CELL_SIZE / 2.0;
+        Enemy *enemy1 = enemy_create((Vector2){x, 0.0 + (float)CELL_SIZE / 2.0});
+        Enemy *enemy2 = enemy_create((Vector2){x, (float)CELL_SIZE + (float)CELL_SIZE / 2.0});
         dynamic_array_add(enemies, enemy1);
         dynamic_array_add(enemies, enemy2);
     }
@@ -147,12 +147,10 @@ Vector2 enemy_shortest_path(Enemy *e, bool towers[CELL_NUM][CELL_NUM])
     int parent = parents[(int)child.y][(int)child.x];
     while (parent != cint)
     {
-        // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 2.0, WHITE);
         child = index_to_vec(parent);
         parent = parents[(int)child.y][(int)child.x];
     }
 
-    // DrawCircle(child.x * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, child.y * (float)CELL_SIZE + (float)CELL_SIZE / 2.0, 4.0, RED);
     return child;
 }
 
@@ -174,7 +172,7 @@ Vector2 RotatePoint(Vector2 point, Vector2 center, float angle)
     return point;
 }
 
-void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
+void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size, Color c)
 {
     Vector2 vertices[3] = {
         {center.x, center.y + size},
@@ -188,19 +186,19 @@ void DrawRotatedTriangle(Vector2 center, Vector2 direction, float size)
         vertices[i] = RotatePoint(vertices[i], center, angle);
     }
 
-    DrawTriangle(vertices[0], vertices[1], vertices[2], TPINK);
+    DrawTriangleLines(vertices[0], vertices[1], vertices[2], c);
 }
 
 void enemy_draw(Enemy *e)
 {
-    DrawRotatedTriangle(e->center, e->direction, 5.5);
-    enemy_life_draw(e);
+    DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 6.0, TYELLOW);
+    // DrawRotatedTriangle(e->center, e->direction, (e->life / e->resistance) * 4.0, TBLUE_LIGHT);
 }
 
 void enemy_life_draw(Enemy *e)
 {
     int y = (float)20 * e->life / e->resistance;
-    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 1, TPINK);
+    DrawRectangle(e->center.x - y / 2, e->center.y - 10, (int)y, 1, TYELLOW);
 }
 
 #endif

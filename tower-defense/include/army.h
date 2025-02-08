@@ -47,6 +47,14 @@ typedef struct
 
 } Explosion;
 
+typedef struct
+{
+    Enemy *target;
+    Tower *origin;
+    bool to_remove;
+
+} Projectile;
+
 Tower *tower_a_create(Vector2 center);
 Tower *tower_b_create(Vector2 center);
 Tower *tower_c_create(Vector2 center);
@@ -157,7 +165,6 @@ void tower_update(Tower *t, DynamicArray *explosions, DynamicArray *enemies)
         for (size_t i = 0; i < enemies->size; i++)
         {
             Enemy *e = enemies->data[i];
-            // TODO: found nearest target
             if (!e->to_remove && CheckCollisionCircles(t->center, t->range, e->center, e->radius))
             {
                 float d = Vector2Distance(e->center, t->center);
@@ -231,8 +238,6 @@ void tower_draw(Tower *t)
         Vector2 p2 = get_circle_center_from_origin(t->center, t->last_direction, TOWER_RADIUS + CANON);
         DrawLineEx(p1, p2, 3.0, t->color);
     }
-    // Draw range
-    // DrawCircleLinesV(t->center, t->range, t->color);
 }
 
 void tower_a_draw(Vector2 p1, Color c)
@@ -248,7 +253,7 @@ void projectile_draw(Tower *t)
     {
         Vector2 p1 = get_circle_center_from_origin(t->center, t->target->center, (t->time_passed * PROJECTILE_DELTA) - PROJECTILE_LEN);
         Vector2 p = get_circle_center_from_origin(t->center, t->target->center, t->time_passed * PROJECTILE_DELTA);
-        DrawLineEx(p, p1, 1.0, TORANGE);
+        DrawLineEx(p, p1, 2.0, TORANGE);
     }
 }
 

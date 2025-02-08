@@ -43,7 +43,7 @@ Enemy *enemy_create(Vector2 center)
     e->direction = (Vector2){0.0, 1.0};
     e->life = 150;
     e->resistance = e->life;
-    e->velocity = 1.0;
+    e->velocity = 0.5;
     e->radius = 7.0;
     e->target = (Vector2){PG_SIZE - 1, SCREEN_HEIGHTF - (float)CELL_SIZE / 2.0};
     e->to_remove = false;
@@ -60,8 +60,8 @@ void enemy_group(DynamicArray *enemies)
     for (int i = 0; i < MAX_ENEMIES / 2; i++)
     {
         float x = (float)i * (float)CELL_SIZE / 2.0 + (float)CELL_SIZE / 2.0;
-        Enemy *enemy1 = enemy_create((Vector2){x, 0.0 + (float)CELL_SIZE / 4.0});
-        Enemy *enemy2 = enemy_create((Vector2){x, (float)CELL_SIZE + (float)CELL_SIZE / 4.0});
+        Enemy *enemy1 = enemy_create((Vector2){x, 0.0 + (float)CELL_SIZE / 2.0});
+        Enemy *enemy2 = enemy_create((Vector2){x, (float)CELL_SIZE + (float)CELL_SIZE / 2.0});
         dynamic_array_add(enemies, enemy1);
         dynamic_array_add(enemies, enemy2);
     }
